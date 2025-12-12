@@ -4,6 +4,7 @@ import { ReviewCard } from './components/ReviewCard';
 import { NewReviewForm } from './components/NewReviewForm';
 import { Settings } from './components/Settings';
 import { AdminProvider, useAdmin } from './contexts/AdminContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import type { Review, Comment } from './types';
 import {
   fetchReviews,
@@ -11,16 +12,15 @@ import {
   deleteReview,
   addComment,
   deleteComment,
-  fetchSettings,
 } from './utils/storage';
 
 function AppContent() {
   const { isAdmin } = useAdmin();
+  const { blogTitle } = useSettings();
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showNewReviewForm, setShowNewReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [blogTitle, setBlogTitle] = useState('파이의 웹툰 리뷰');
 
   // base path 제거한 실제 경로 계산
   const getRelativePath = (pathname: string) => {
@@ -32,13 +32,6 @@ function AppContent() {
   };
 
   const relativePath = getRelativePath(currentPath);
-
-  // 블로그 설정 불러오기
-  useEffect(() => {
-    fetchSettings().then((settings) => {
-      setBlogTitle(settings.blogTitle);
-    });
-  }, []);
 
   // URL 변경 감지
   useEffect(() => {
@@ -226,7 +219,9 @@ function AppContent() {
 function App() {
   return (
     <AdminProvider>
-      <AppContent />
+      <SettingsProvider>
+        <AppContent />
+      </SettingsProvider>
     </AdminProvider>
   );
 }
