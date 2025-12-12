@@ -7,7 +7,8 @@ const DEFAULT_OPTIONS: ImageProcessingOptions = {
   watermarkOpacity: 0.7,
 };
 
-const MAX_WIDTH = 1200; // 최대 너비 (저용량을 위해)
+const MAX_WIDTH = 800; // 최대 너비 (100kb 이하를 위해)
+const MAX_FILE_SIZE = 100 * 1024; // 100KB
 
 export async function processImage(
   file: File,
@@ -50,8 +51,27 @@ export async function processImage(
         // 워터마크 적용
         applyWatermark(ctx, canvas.width, canvas.height, opts);
 
-        // 결과 반환 (압축률 0.75로 낮춤)
-        resolve(canvas.toDataURL('image/jpeg', 0.75));
+        // 100kb 이하가 될 때까지 반복 압축
+        let quality = 0.7;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+        while (getDataUrlSize(dataUrl) > MAX_FILE_SIZE && quality > 0.1) {
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+
+        // 여전히 크면 추가로 리사이즈
+        if (getDataUrlSize(dataUrl) > MAX_FILE_SIZE) {
+          const scale = 0.8;
+          canvas.width = Math.floor(width * scale);
+          canvas.height = Math.floor(height * scale);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          applyNoise(ctx, canvas.width, canvas.height, opts.noiseIntensity);
+          applyWatermark(ctx, canvas.width, canvas.height, opts);
+          dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        }
+
+        resolve(dataUrl);
       };
 
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -61,6 +81,14 @@ export async function processImage(
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
+}
+
+// Data URL 크기 계산 (바이트)
+function getDataUrlSize(dataUrl: string): number {
+  // data:image/jpeg;base64, 제거하고 base64 문자열만 추출
+  const base64 = dataUrl.split(',')[1];
+  // base64는 4/3 인코딩이므로 실제 크기 계산
+  return (base64.length * 3) / 4;
 }
 
 function applyNoise(

@@ -203,19 +203,19 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
         </div>
 
         <div
-          className="relative overflow-visible max-h-[60vh] bg-gray-100 dark:bg-gray-900 p-8"
+          className="relative overflow-visible max-h-[60vh] bg-gray-100 dark:bg-gray-900 p-8 flex items-center justify-center"
           onMouseMove={handleMove}
           onMouseUp={handleEnd}
           onMouseLeave={handleEnd}
           onTouchMove={handleMove}
           onTouchEnd={handleEnd}
         >
-          <div className="overflow-auto max-h-[calc(60vh-4rem)] relative">
+          <div className="relative w-full h-full flex items-center justify-center">
             <img
               ref={imageRef}
               src={imageUrl}
               alt="Edit"
-              className="max-w-full h-auto mx-auto select-none"
+              className="max-w-full max-h-[calc(60vh-8rem)] object-contain mx-auto select-none"
               draggable={false}
             />
 

@@ -5,16 +5,27 @@ import { ImageEditor } from './ImageEditor';
 import { useAdmin } from '../contexts/AdminContext';
 
 interface ImageUploaderProps {
-  onImageProcessed: (imageUrl: string) => void;
+  onImagesProcessed: (imageUrls: string[]) => void;
 }
 
-export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
+interface ProcessedImage {
+  id: string;
+  dataUrl: string;
+  storageUrl?: string;
+}
+
+const MAX_IMAGES = 4;
+
+export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
   const { userNickname } = useAdmin();
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -23,14 +34,20 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
       return;
     }
 
+    if (processedImages.length >= MAX_IMAGES) {
+      alert(`최대 ${MAX_IMAGES}장까지만 업로드 가능합니다.`);
+      return;
+    }
+
     // 원본 이미지를 먼저 불러와서 선택 화면 표시
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setOriginalImage(result);
+      setCurrentFile(file);
     };
     reader.readAsDataURL(file);
-  }, []);
+  }, [processedImages.length]);
 
   const handleCrop = useCallback(async (croppedImageUrl: string) => {
     setShowEditor(false);
@@ -50,27 +67,21 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
         watermarkOpacity: 0.7,
       });
 
-      // Supabase Storage에 업로드
-      const storageUrl = await uploadImage(processedDataUrl, 'cropped');
-
-      if (!storageUrl) {
-        alert('이미지 업로드에 실패했습니다.');
-        return;
-      }
-
-      setPreview(storageUrl);
-      onImageProcessed(storageUrl);
+      // 미리보기 표시
+      setPreviewImage(processedDataUrl);
+      setShowPreview(true);
     } catch (error) {
       console.error('Image processing failed:', error);
       alert('이미지 처리에 실패했습니다.');
     } finally {
       setIsProcessing(false);
       setOriginalImage(null);
+      setCurrentFile(null);
     }
-  }, [userNickname, onImageProcessed]);
+  }, [userNickname]);
 
   const handleSkipCrop = useCallback(async () => {
-    if (!originalImage) return;
+    if (!originalImage || !currentFile) return;
     setIsProcessing(true);
 
     try {
@@ -87,29 +98,79 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
         watermarkOpacity: 0.7,
       });
 
-      // Supabase Storage에 업로드
-      const storageUrl = await uploadImage(processedDataUrl, 'original');
-
-      if (!storageUrl) {
-        alert('이미지 업로드에 실패했습니다.');
-        return;
-      }
-
-      setPreview(storageUrl);
-      onImageProcessed(storageUrl);
+      // 미리보기 표시
+      setPreviewImage(processedDataUrl);
+      setShowPreview(true);
     } catch (error) {
       console.error('Image processing failed:', error);
       alert('이미지 처리에 실패했습니다.');
     } finally {
       setIsProcessing(false);
       setOriginalImage(null);
+      setCurrentFile(null);
     }
-  }, [originalImage, userNickname, onImageProcessed]);
+  }, [originalImage, currentFile, userNickname]);
+
+  const handleConfirmPreview = useCallback(async () => {
+    if (!previewImage) return;
+    setIsProcessing(true);
+
+    try {
+      // Supabase Storage에 업로드
+      const storageUrl = await uploadImage(previewImage, 'image');
+
+      if (!storageUrl) {
+        alert('이미지 업로드에 실패했습니다.');
+        return;
+      }
+
+      // 처리된 이미지 목록에 추가
+      const newImage: ProcessedImage = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        dataUrl: previewImage,
+        storageUrl,
+      };
+
+      const updatedImages = [...processedImages, newImage];
+      setProcessedImages(updatedImages);
+
+      // 부모 컴포넌트에 전달
+      onImagesProcessed(updatedImages.map(img => img.storageUrl!));
+
+      setShowPreview(false);
+      setPreviewImage(null);
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      alert('이미지 업로드에 실패했습니다.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [previewImage, processedImages, onImagesProcessed]);
+
+  const handleRetakePreview = useCallback(() => {
+    setShowPreview(false);
+    setPreviewImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }, []);
 
   const handleCancelEdit = useCallback(() => {
     setShowEditor(false);
     setOriginalImage(null);
+    setCurrentFile(null);
   }, []);
+
+  const handleCancelPreview = useCallback(() => {
+    setShowPreview(false);
+    setPreviewImage(null);
+  }, []);
+
+  const removeImage = useCallback((id: string) => {
+    const updatedImages = processedImages.filter(img => img.id !== id);
+    setProcessedImages(updatedImages);
+    onImagesProcessed(updatedImages.map(img => img.storageUrl!));
+  }, [processedImages, onImagesProcessed]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -132,19 +193,15 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleFile(file);
+    // input 초기화
+    e.target.value = '';
   }, [handleFile]);
-
-  const clearPreview = () => {
-    setPreview(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
   return (
     <>
       <div className="space-y-3">
-        {!preview ? (
+        {/* 이미지 업로드 영역 */}
+        {processedImages.length < MAX_IMAGES && (
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -171,7 +228,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
                 <p className="text-gray-600 dark:text-gray-400">
-                  처리 중... (노이즈 + 워터마크 + Storage 업로드)
+                  처리 중... (100kb 이하로 압축 + 워터마크)
                 </p>
               </div>
             ) : (
@@ -181,35 +238,42 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
                   웹툰 캡쳐를 드래그하거나 클릭해서 업로드
                 </p>
                 <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                  이미지 자르기 → 자동으로 노이즈 + 워터마크(@{userNickname || '익명'})가 적용됩니다
-                </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                  (저용량으로 최적화되어 업로드됩니다)
+                  {processedImages.length} / {MAX_IMAGES}장 • 100kb 이하로 압축 • 워터마크(@{userNickname || '익명'})
                 </p>
               </>
             )}
           </div>
-        ) : (
-          <div className="relative">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700"
-            />
-            <button
-              onClick={clearPreview}
-              className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+        )}
+
+        {/* 업로드된 이미지 목록 (그리드) */}
+        {processedImages.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {processedImages.map((img, index) => (
+              <div key={img.id} className="relative group">
+                <img
+                  src={img.dataUrl}
+                  alt={`Image ${index + 1}`}
+                  className="w-full aspect-square object-cover rounded-xl border border-gray-200 dark:border-gray-700"
+                />
+                <button
+                  onClick={() => removeImage(img.id)}
+                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black/90 text-white rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 text-white text-xs rounded">
+                  {index + 1}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
       {/* 자르기 선택 화면 */}
-      {originalImage && !showEditor && !preview && (
+      {originalImage && !showEditor && !showPreview && (
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
           <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
@@ -225,7 +289,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
               <img
                 src={originalImage}
                 alt="Preview"
-                className="max-w-full max-h-[50vh] mx-auto rounded-lg"
+                className="max-w-full max-h-[50vh] mx-auto rounded-lg object-contain"
               />
             </div>
 
@@ -261,6 +325,54 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
           onCrop={handleCrop}
           onCancel={handleCancelEdit}
         />
+      )}
+
+      {/* 미리보기 확인 화면 */}
+      {showPreview && previewImage && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                미리보기 확인
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                이 이미지를 업로드할까요?
+              </p>
+            </div>
+
+            <div className="p-4 bg-gray-100 dark:bg-gray-900">
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-full max-h-[50vh] mx-auto rounded-lg object-contain"
+              />
+            </div>
+
+            <div className="p-4 flex gap-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={handleConfirmPreview}
+                disabled={isProcessing}
+                className="flex-1 btn-primary py-3 disabled:opacity-50"
+              >
+                {isProcessing ? '업로드 중...' : '✓ 업로드'}
+              </button>
+              <button
+                onClick={handleRetakePreview}
+                disabled={isProcessing}
+                className="flex-1 btn-secondary py-3 disabled:opacity-50"
+              >
+                다시 선택
+              </button>
+              <button
+                onClick={handleCancelPreview}
+                disabled={isProcessing}
+                className="px-4 py-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 disabled:opacity-50"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

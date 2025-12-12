@@ -2,7 +2,7 @@ export interface Review {
   id: string;
   webtoonTitle: string;
   episode?: string;
-  imageUrl: string;
+  imageUrls: string[]; // 다중 이미지 지원 (최대 4장)
   authorNickname: string;
   authorEmail: string;
   comments: Comment[];

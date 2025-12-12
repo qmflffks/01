@@ -21,6 +21,15 @@ export function ReviewCard({
   const { userNickname, user } = useAdmin();
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % review.imageUrls.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + review.imageUrls.length) % review.imageUrls.length);
+  };
 
   const handleAddComment = () => {
     if (!newComment.trim()) return;
@@ -90,13 +99,62 @@ export function ReviewCard({
         </span>
       </div>
 
-      {/* 이미지 */}
-      <div className="relative">
+      {/* 이미지 캐러셀 */}
+      <div className="relative bg-black">
         <img
-          src={review.imageUrl}
-          alt={`${review.webtoonTitle} 캡쳐`}
-          className="w-full"
+          src={review.imageUrls[currentImageIndex]}
+          alt={`${review.webtoonTitle} 캡쳐 ${currentImageIndex + 1}`}
+          className="w-full object-contain"
+          style={{ maxHeight: '70vh' }}
         />
+
+        {/* 이미지가 여러 장일 때만 네비게이션 표시 */}
+        {review.imageUrls.length > 1 && (
+          <>
+            {/* 이전 버튼 */}
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+              aria-label="이전 이미지"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* 다음 버튼 */}
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+              aria-label="다음 이미지"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* 인디케이터 */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+              {review.imageUrls.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentImageIndex
+                      ? 'bg-white w-6'
+                      : 'bg-white/50 hover:bg-white/75'
+                  }`}
+                  aria-label={`이미지 ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* 이미지 카운터 */}
+            <div className="absolute top-3 right-3 px-3 py-1 bg-black/70 text-white text-sm rounded-full">
+              {currentImageIndex + 1} / {review.imageUrls.length}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 댓글 섹션 */}
