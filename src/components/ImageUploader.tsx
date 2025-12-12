@@ -16,18 +16,17 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
   const [showEditor, setShowEditor] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(async (file: File) => {
+  const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('이미지 파일만 업로드 가능합니다.');
       return;
     }
 
-    // 원본 이미지를 먼저 불러와서 편집기에 표시
+    // 원본 이미지를 먼저 불러와서 선택 화면 표시
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
       setOriginalImage(result);
-      setShowEditor(true);
     };
     reader.readAsDataURL(file);
   }, []);
@@ -60,6 +59,35 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
       setOriginalImage(null);
     }
   }, [userNickname, onImageProcessed]);
+
+  const handleSkipCrop = useCallback(async () => {
+    if (!originalImage) return;
+    setIsProcessing(true);
+
+    try {
+      // 원본 이미지를 Blob으로 변환
+      const response = await fetch(originalImage);
+      const blob = await response.blob();
+      const file = new File([blob], 'original.jpg', { type: 'image/jpeg' });
+
+      // 노이즈 + 워터마크 처리 (자르기 없이)
+      const processedImage = await processImage(file, {
+        noiseIntensity: 15,
+        watermarkText: userNickname || '익명',
+        watermarkPosition: 'center',
+        watermarkOpacity: 0.7,
+      });
+
+      setPreview(processedImage);
+      onImageProcessed(processedImage);
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      alert('이미지 처리에 실패했습니다.');
+    } finally {
+      setIsProcessing(false);
+      setOriginalImage(null);
+    }
+  }, [originalImage, userNickname, onImageProcessed]);
 
   const handleCancelEdit = useCallback(() => {
     setShowEditor(false);
@@ -162,6 +190,52 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
           </div>
         )}
       </div>
+
+      {/* 자르기 선택 화면 */}
+      {originalImage && !showEditor && !preview && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                이미지 업로드
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                이미지를 자를까요?
+              </p>
+            </div>
+
+            <div className="p-4">
+              <img
+                src={originalImage}
+                alt="Preview"
+                className="max-w-full max-h-[50vh] mx-auto rounded-lg"
+              />
+            </div>
+
+            <div className="p-4 flex gap-3 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowEditor(true)}
+                className="flex-1 btn-primary py-3"
+              >
+                ✂️ 자르기
+              </button>
+              <button
+                onClick={handleSkipCrop}
+                disabled={isProcessing}
+                className="flex-1 btn-secondary py-3 disabled:opacity-50"
+              >
+                {isProcessing ? '처리 중...' : '바로 업로드'}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-4 py-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 이미지 편집기 */}
       {showEditor && originalImage && (
