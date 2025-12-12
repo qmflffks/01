@@ -1,19 +1,12 @@
-import { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import { AdminLogin } from './AdminLogin';
 import { useAdmin } from '../contexts/AdminContext';
-import { fetchSettings } from '../utils/storage';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useAdmin();
-  const [blogTitle, setBlogTitle] = useState('파이의 웹툰 리뷰');
-
-  useEffect(() => {
-    fetchSettings().then((settings) => {
-      setBlogTitle(settings.blogTitle);
-    });
-  }, []);
+  const { blogTitle } = useSettings();
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700">
