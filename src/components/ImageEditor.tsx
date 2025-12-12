@@ -7,69 +7,118 @@ interface ImageEditorProps {
   onCancel: () => void;
 }
 
+type ResizeHandle = 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r' | null;
+
 export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
+  const [activeHandle, setActiveHandle] = useState<ResizeHandle>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0, cropArea: { x: 0, y: 0, width: 0, height: 0 } });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (imageRef.current) {
       const img = imageRef.current;
       setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
 
-      // 초기 자르기 영역 설정 (중앙 80%)
-      const margin = 0.1;
+      // 초기 자르기 영역 설정 (전체 이미지)
       setCropArea({
-        x: img.naturalWidth * margin,
-        y: img.naturalHeight * margin,
-        width: img.naturalWidth * (1 - 2 * margin),
-        height: img.naturalHeight * (1 - 2 * margin),
+        x: 0,
+        y: 0,
+        width: img.naturalWidth,
+        height: img.naturalHeight,
       });
     }
   }, [imageUrl]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!imageRef.current) return;
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!imageRef.current) return { x: 0, y: 0 };
 
     const rect = imageRef.current.getBoundingClientRect();
     const scaleX = imageSize.width / rect.width;
     const scaleY = imageSize.height / rect.height;
 
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    let clientX: number, clientY: number;
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
 
-    setIsDragging(true);
-    setDragStart({ x, y });
-    setCropArea({ x, y, width: 0, height: 0 });
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+    };
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !imageRef.current) return;
+  const handleStart = (e: React.MouseEvent | React.TouchEvent, handle: ResizeHandle) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const scaleX = imageSize.width / rect.width;
-    const scaleY = imageSize.height / rect.height;
-
-    const currentX = (e.clientX - rect.left) * scaleX;
-    const currentY = (e.clientY - rect.top) * scaleY;
-
-    const width = currentX - dragStart.x;
-    const height = currentY - dragStart.y;
-
-    setCropArea({
-      x: width < 0 ? currentX : dragStart.x,
-      y: height < 0 ? currentY : dragStart.y,
-      width: Math.abs(width),
-      height: Math.abs(height),
+    const coords = getCoordinates(e);
+    setActiveHandle(handle);
+    setDragStart({
+      x: coords.x,
+      y: coords.y,
+      cropArea: { ...cropArea },
     });
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!activeHandle || !imageRef.current) return;
+    e.preventDefault();
+
+    const coords = getCoordinates(e);
+    const dx = coords.x - dragStart.x;
+    const dy = coords.y - dragStart.y;
+
+    let newCrop = { ...dragStart.cropArea };
+
+    switch (activeHandle) {
+      case 'tl': // 좌상단
+        newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, dragStart.cropArea.x + dragStart.cropArea.width - 50));
+        newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, dragStart.cropArea.y + dragStart.cropArea.height - 50));
+        newCrop.width = dragStart.cropArea.width - (newCrop.x - dragStart.cropArea.x);
+        newCrop.height = dragStart.cropArea.height - (newCrop.y - dragStart.cropArea.y);
+        break;
+      case 'tr': // 우상단
+        newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, dragStart.cropArea.y + dragStart.cropArea.height - 50));
+        newCrop.width = Math.max(50, Math.min(dragStart.cropArea.width + dx, imageSize.width - dragStart.cropArea.x));
+        newCrop.height = dragStart.cropArea.height - (newCrop.y - dragStart.cropArea.y);
+        break;
+      case 'bl': // 좌하단
+        newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, dragStart.cropArea.x + dragStart.cropArea.width - 50));
+        newCrop.width = dragStart.cropArea.width - (newCrop.x - dragStart.cropArea.x);
+        newCrop.height = Math.max(50, Math.min(dragStart.cropArea.height + dy, imageSize.height - dragStart.cropArea.y));
+        break;
+      case 'br': // 우하단
+        newCrop.width = Math.max(50, Math.min(dragStart.cropArea.width + dx, imageSize.width - dragStart.cropArea.x));
+        newCrop.height = Math.max(50, Math.min(dragStart.cropArea.height + dy, imageSize.height - dragStart.cropArea.y));
+        break;
+      case 't': // 상단
+        newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, dragStart.cropArea.y + dragStart.cropArea.height - 50));
+        newCrop.height = dragStart.cropArea.height - (newCrop.y - dragStart.cropArea.y);
+        break;
+      case 'b': // 하단
+        newCrop.height = Math.max(50, Math.min(dragStart.cropArea.height + dy, imageSize.height - dragStart.cropArea.y));
+        break;
+      case 'l': // 좌측
+        newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, dragStart.cropArea.x + dragStart.cropArea.width - 50));
+        newCrop.width = dragStart.cropArea.width - (newCrop.x - dragStart.cropArea.x);
+        break;
+      case 'r': // 우측
+        newCrop.width = Math.max(50, Math.min(dragStart.cropArea.width + dx, imageSize.width - dragStart.cropArea.x));
+        break;
+    }
+
+    setCropArea(newCrop);
+  };
+
+  const handleEnd = () => {
+    setActiveHandle(null);
   };
 
   const handleCrop = () => {
@@ -117,6 +166,9 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
     };
   };
 
+  const handleStyle = "w-8 h-8 bg-white border-2 border-primary-500 rounded-full shadow-lg touch-manipulation";
+  const edgeHandleStyle = "bg-primary-500/50 touch-manipulation";
+
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
@@ -125,17 +177,17 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
             이미지 자르기
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            드래그하여 자를 영역을 선택하세요
+            핸들을 드래그하여 영역을 조절하세요
           </p>
         </div>
 
         <div
-          ref={containerRef}
           className="relative overflow-auto max-h-[60vh] bg-gray-100 dark:bg-gray-900"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseMove={handleMove}
+          onMouseUp={handleEnd}
+          onMouseLeave={handleEnd}
+          onTouchMove={handleMove}
+          onTouchEnd={handleEnd}
         >
           <img
             ref={imageRef}
@@ -145,13 +197,65 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
             draggable={false}
           />
 
-          {/* 자르기 영역 표시 */}
+          {/* 자르기 영역 및 핸들 */}
           {cropArea.width > 0 && cropArea.height > 0 && (
             <div
-              className="absolute border-2 border-primary-500 bg-primary-500/20"
+              className="absolute border-2 border-primary-500"
               style={getCropStyle()}
             >
-              <div className="absolute inset-0 border border-white/50" />
+              {/* 반투명 오버레이 (선택된 영역 외부) */}
+              <div className="absolute inset-0 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
+
+              {/* 그리드 라인 */}
+              <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
+                {[...Array(9)].map((_, i) => (
+                  <div key={i} className="border border-white/30" />
+                ))}
+              </div>
+
+              {/* 모서리 핸들 */}
+              <div
+                className={`absolute -left-4 -top-4 ${handleStyle} cursor-nwse-resize`}
+                onMouseDown={(e) => handleStart(e, 'tl')}
+                onTouchStart={(e) => handleStart(e, 'tl')}
+              />
+              <div
+                className={`absolute -right-4 -top-4 ${handleStyle} cursor-nesw-resize`}
+                onMouseDown={(e) => handleStart(e, 'tr')}
+                onTouchStart={(e) => handleStart(e, 'tr')}
+              />
+              <div
+                className={`absolute -left-4 -bottom-4 ${handleStyle} cursor-nesw-resize`}
+                onMouseDown={(e) => handleStart(e, 'bl')}
+                onTouchStart={(e) => handleStart(e, 'bl')}
+              />
+              <div
+                className={`absolute -right-4 -bottom-4 ${handleStyle} cursor-nwse-resize`}
+                onMouseDown={(e) => handleStart(e, 'br')}
+                onTouchStart={(e) => handleStart(e, 'br')}
+              />
+
+              {/* 변 핸들 */}
+              <div
+                className={`absolute left-1/2 -translate-x-1/2 -top-2 w-12 h-4 ${edgeHandleStyle} rounded cursor-ns-resize`}
+                onMouseDown={(e) => handleStart(e, 't')}
+                onTouchStart={(e) => handleStart(e, 't')}
+              />
+              <div
+                className={`absolute left-1/2 -translate-x-1/2 -bottom-2 w-12 h-4 ${edgeHandleStyle} rounded cursor-ns-resize`}
+                onMouseDown={(e) => handleStart(e, 'b')}
+                onTouchStart={(e) => handleStart(e, 'b')}
+              />
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-12 ${edgeHandleStyle} rounded cursor-ew-resize`}
+                onMouseDown={(e) => handleStart(e, 'l')}
+                onTouchStart={(e) => handleStart(e, 'l')}
+              />
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-12 ${edgeHandleStyle} rounded cursor-ew-resize`}
+                onMouseDown={(e) => handleStart(e, 'r')}
+                onTouchStart={(e) => handleStart(e, 'r')}
+              />
             </div>
           )}
 

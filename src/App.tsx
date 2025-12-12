@@ -38,23 +38,28 @@ function AppContent() {
     window.addEventListener('popstate', handlePathChange);
 
     // 링크 클릭 감지
-    const handleClick = (e: MouseEvent) => {
+    const handleClick = (e: Event) => {
       const target = e.target as HTMLElement;
       const link = target.closest('a');
 
-      if (link && link.href.startsWith(window.location.origin)) {
-        e.preventDefault();
-        const path = new URL(link.href).pathname;
-        window.history.pushState({}, '', path);
-        setCurrentPath(path);
+      if (link && link.href && link.href.startsWith(window.location.origin)) {
+        // 외부 링크나 다운로드 링크가 아닌 경우에만 처리
+        if (!link.target && !link.download) {
+          e.preventDefault();
+          const url = new URL(link.href);
+          const path = url.pathname;
+          window.history.pushState({}, '', path);
+          setCurrentPath(path);
+          window.scrollTo(0, 0); // 페이지 상단으로 스크롤
+        }
       }
     };
 
-    document.addEventListener('click', handleClick);
+    document.addEventListener('click', handleClick, true); // capture phase에서 처리
 
     return () => {
       window.removeEventListener('popstate', handlePathChange);
-      document.removeEventListener('click', handleClick);
+      document.removeEventListener('click', handleClick, true);
     };
   }, []);
 
