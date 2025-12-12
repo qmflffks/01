@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { fetchSettings, updateSettings } from '../utils/storage';
+import { useAdmin } from '../contexts/AdminContext';
 import type { BlogSettings } from '../types';
 
 export function Settings() {
-  const [settings, setSettings] = useState<BlogSettings>({
+  const { userNickname, setUserNickname, user } = useAdmin();
+  const [blogSettings, setBlogSettings] = useState<BlogSettings>({
     blogTitle: '파이의 웹툰 리뷰',
-    nickname: '파이',
   });
+  const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -15,10 +17,14 @@ export function Settings() {
     loadSettings();
   }, []);
 
+  useEffect(() => {
+    setNickname(userNickname);
+  }, [userNickname]);
+
   const loadSettings = async () => {
     setLoading(true);
     const data = await fetchSettings();
-    setSettings(data);
+    setBlogSettings(data);
     setLoading(false);
   };
 
@@ -26,9 +32,12 @@ export function Settings() {
     setSaving(true);
     setMessage('');
 
-    const success = await updateSettings(settings);
+    // 블로그 제목 저장
+    const success = await updateSettings(blogSettings);
 
     if (success) {
+      // 개인 닉네임 저장 (localStorage)
+      setUserNickname(nickname);
       setMessage('설정이 저장되었습니다! 변경사항이 적용되려면 페이지를 새로고침해주세요.');
     } else {
       setMessage('설정 저장에 실패했습니다.');
@@ -59,13 +68,16 @@ export function Settings() {
             블로그 설정
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            블로그 제목과 닉네임을 설정할 수 있습니다.
+            블로그 제목과 내 닉네임을 설정할 수 있습니다.
           </p>
         </div>
 
-        <div className="card space-y-6">
-          {/* 블로그 제목 */}
+        {/* 블로그 제목 (전역 설정) */}
+        <div className="card space-y-6 mb-6">
           <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              블로그 전역 설정
+            </h2>
             <label
               htmlFor="blogTitle"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
@@ -75,65 +87,78 @@ export function Settings() {
             <input
               type="text"
               id="blogTitle"
-              value={settings.blogTitle}
-              onChange={(e) => setSettings({ ...settings, blogTitle: e.target.value })}
+              value={blogSettings.blogTitle}
+              onChange={(e) => setBlogSettings({ ...blogSettings, blogTitle: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                 focus:ring-2 focus:ring-primary-500 focus:border-transparent
                 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               placeholder="예: 파이의 웹툰 리뷰"
             />
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              블로그 헤더와 푸터에 표시됩니다.
+            </p>
           </div>
+        </div>
 
-          {/* 닉네임 */}
+        {/* 내 닉네임 (개인 설정) */}
+        <div className="card space-y-6 mb-6">
           <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              내 개인 설정
+            </h2>
             <label
               htmlFor="nickname"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              닉네임
+              내 닉네임
             </label>
             <input
               type="text"
               id="nickname"
-              value={settings.nickname}
-              onChange={(e) => setSettings({ ...settings, nickname: e.target.value })}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                 focus:ring-2 focus:ring-primary-500 focus:border-transparent
                 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               placeholder="예: 파이"
             />
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              이 닉네임은 워터마크에 표시됩니다.
+              내가 작성하는 리뷰와 댓글, 그리고 이미지 워터마크에 표시됩니다.
             </p>
-          </div>
-
-          {/* 저장 버튼 */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg
-                transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? '저장 중...' : '저장'}
-            </button>
-
-            {message && (
-              <p
-                className={`text-sm ${
-                  message.includes('실패')
-                    ? 'text-red-600 dark:text-red-400'
-                    : 'text-green-600 dark:text-green-400'
-                }`}
-              >
-                {message}
+            {user?.email && (
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                현재 로그인: {user.email}
               </p>
             )}
           </div>
         </div>
 
+        {/* 저장 버튼 */}
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg
+              transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? '저장 중...' : '저장'}
+          </button>
+
+          {message && (
+            <p
+              className={`text-sm ${
+                message.includes('실패')
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-green-600 dark:text-green-400'
+              }`}
+            >
+              {message}
+            </p>
+          )}
+        </div>
+
         {/* 뒤로가기 */}
-        <div className="mt-6">
+        <div>
           <a
             href="/"
             className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400

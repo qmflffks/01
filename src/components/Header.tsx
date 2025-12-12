@@ -8,12 +8,10 @@ export function Header() {
   const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useAdmin();
   const [blogTitle, setBlogTitle] = useState('파이의 웹툰 리뷰');
-  const [nickname, setNickname] = useState('파이');
 
   useEffect(() => {
     fetchSettings().then((settings) => {
       setBlogTitle(settings.blogTitle);
-      setNickname(settings.nickname);
     });
   }, []);
 
@@ -22,14 +20,9 @@ export function Header() {
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
         <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <span className="text-2xl">📖</span>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-              {blogTitle}
-            </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              @{nickname}
-            </p>
-          </div>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+            {blogTitle}
+          </h1>
         </a>
 
         <div className="flex items-center gap-2">

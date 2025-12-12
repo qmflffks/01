@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ImageUploader } from './ImageUploader';
+import { useAdmin } from '../contexts/AdminContext';
 import type { Review, Comment } from '../types';
 import { generateId } from '../utils/imageProcessor';
 
@@ -9,6 +10,7 @@ interface NewReviewFormProps {
 }
 
 export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
+  const { userNickname, user } = useAdmin();
   const [webtoonTitle, setWebtoonTitle] = useState('');
   const [episode, setEpisode] = useState('');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -24,6 +26,8 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
       ? [{
           id: generateId(),
           text: firstComment.trim(),
+          authorNickname: userNickname || '익명',
+          authorEmail: user?.email || '',
           createdAt: new Date(),
           reactions: [],
         }]
@@ -34,6 +38,8 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
       webtoonTitle: webtoonTitle.trim(),
       episode: episode.trim() || undefined,
       imageUrl,
+      authorNickname: userNickname || '익명',
+      authorEmail: user?.email || '',
       comments,
       createdAt: new Date(),
     };

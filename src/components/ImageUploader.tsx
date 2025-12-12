@@ -1,27 +1,20 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { processImage } from '../utils/imageProcessor';
 import { ImageEditor } from './ImageEditor';
-import { fetchSettings } from '../utils/storage';
+import { useAdmin } from '../contexts/AdminContext';
 
 interface ImageUploaderProps {
   onImageProcessed: (imageUrl: string) => void;
 }
 
 export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
+  const { userNickname } = useAdmin();
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
-  const [nickname, setNickname] = useState('파이');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // 닉네임 불러오기
-  useEffect(() => {
-    fetchSettings().then((settings) => {
-      setNickname(settings.nickname);
-    });
-  }, []);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -52,7 +45,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
       // 노이즈 + 워터마크 처리
       const processedImage = await processImage(file, {
         noiseIntensity: 15,
-        watermarkText: nickname,
+        watermarkText: userNickname || '익명',
         watermarkPosition: 'center',
         watermarkOpacity: 0.7,
       });
@@ -66,7 +59,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
       setIsProcessing(false);
       setOriginalImage(null);
     }
-  }, [nickname, onImageProcessed]);
+  }, [userNickname, onImageProcessed]);
 
   const handleCancelEdit = useCallback(() => {
     setShowEditor(false);
@@ -143,7 +136,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
                   웹툰 캡쳐를 드래그하거나 클릭해서 업로드
                 </p>
                 <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                  이미지 자르기 → 자동으로 노이즈 + 워터마크(@{nickname})가 적용됩니다
+                  이미지 자르기 → 자동으로 노이즈 + 워터마크(@{userNickname || '익명'})가 적용됩니다
                 </p>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                   (저용량으로 최적화되어 업로드됩니다)

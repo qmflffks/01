@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAdmin } from '../contexts/AdminContext';
 import type { Review, Comment } from '../types';
 import { generateId } from '../utils/imageProcessor';
 
@@ -17,6 +18,7 @@ export function ReviewCard({
   onDeleteReview,
   onDeleteComment,
 }: ReviewCardProps) {
+  const { userNickname, user } = useAdmin();
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
 
@@ -26,6 +28,8 @@ export function ReviewCard({
     const comment: Comment = {
       id: generateId(),
       text: newComment.trim(),
+      authorNickname: userNickname || '익명',
+      authorEmail: user?.email || '',
       createdAt: new Date(),
       reactions: [],
     };
@@ -52,10 +56,14 @@ export function ReviewCard({
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
-            <span className="text-primary-600 dark:text-primary-400 font-bold">파</span>
+            <span className="text-primary-600 dark:text-primary-400 font-bold">
+              {review.authorNickname.charAt(0)}
+            </span>
           </div>
           <div>
-            <p className="font-semibold text-gray-900 dark:text-white">@파이</p>
+            <p className="font-semibold text-gray-900 dark:text-white">
+              @{review.authorNickname}
+            </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {formatDate(review.createdAt)}
             </p>
@@ -103,6 +111,9 @@ export function ReviewCard({
               >
                 <span className="text-lg">💬</span>
                 <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
+                    @{comment.authorNickname}
+                  </p>
                   <p className="text-gray-800 dark:text-gray-200 break-words">
                     {comment.text}
                   </p>
