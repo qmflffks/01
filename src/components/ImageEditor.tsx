@@ -182,85 +182,87 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
         </div>
 
         <div
-          className="relative overflow-auto max-h-[60vh] bg-gray-100 dark:bg-gray-900"
+          className="relative overflow-visible max-h-[60vh] bg-gray-100 dark:bg-gray-900 p-8"
           onMouseMove={handleMove}
           onMouseUp={handleEnd}
           onMouseLeave={handleEnd}
           onTouchMove={handleMove}
           onTouchEnd={handleEnd}
         >
-          <img
-            ref={imageRef}
-            src={imageUrl}
-            alt="Edit"
-            className="max-w-full h-auto mx-auto select-none"
-            draggable={false}
-          />
+          <div className="overflow-auto max-h-[calc(60vh-4rem)]">
+            <img
+              ref={imageRef}
+              src={imageUrl}
+              alt="Edit"
+              className="max-w-full h-auto mx-auto select-none"
+              draggable={false}
+            />
 
-          {/* 자르기 영역 및 핸들 */}
-          {cropArea.width > 0 && cropArea.height > 0 && (
-            <div
-              className="absolute border-2 border-primary-500"
-              style={getCropStyle()}
-            >
-              {/* 반투명 오버레이 (선택된 영역 외부) */}
-              <div className="absolute inset-0 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]" />
+            {/* 자르기 영역 및 핸들 */}
+            {cropArea.width > 0 && cropArea.height > 0 && (
+              <div
+                className="absolute border-2 border-primary-500 z-10"
+                style={getCropStyle()}
+              >
+                {/* 반투명 오버레이 (선택된 영역 외부) */}
+                <div className="absolute inset-0 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] pointer-events-none" />
 
-              {/* 그리드 라인 */}
-              <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-                {[...Array(9)].map((_, i) => (
-                  <div key={i} className="border border-white/30" />
-                ))}
+                {/* 그리드 라인 */}
+                <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/30" />
+                  ))}
+                </div>
+
+                {/* 모서리 핸들 */}
+                <div
+                  className={`absolute -left-4 -top-4 ${handleStyle} cursor-nwse-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'tl')}
+                  onTouchStart={(e) => handleStart(e, 'tl')}
+                />
+                <div
+                  className={`absolute -right-4 -top-4 ${handleStyle} cursor-nesw-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'tr')}
+                  onTouchStart={(e) => handleStart(e, 'tr')}
+                />
+                <div
+                  className={`absolute -left-4 -bottom-4 ${handleStyle} cursor-nesw-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'bl')}
+                  onTouchStart={(e) => handleStart(e, 'bl')}
+                />
+                <div
+                  className={`absolute -right-4 -bottom-4 ${handleStyle} cursor-nwse-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'br')}
+                  onTouchStart={(e) => handleStart(e, 'br')}
+                />
+
+                {/* 변 핸들 */}
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 -top-2 w-12 h-4 ${edgeHandleStyle} rounded cursor-ns-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 't')}
+                  onTouchStart={(e) => handleStart(e, 't')}
+                />
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 -bottom-2 w-12 h-4 ${edgeHandleStyle} rounded cursor-ns-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'b')}
+                  onTouchStart={(e) => handleStart(e, 'b')}
+                />
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-12 ${edgeHandleStyle} rounded cursor-ew-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'l')}
+                  onTouchStart={(e) => handleStart(e, 'l')}
+                />
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-12 ${edgeHandleStyle} rounded cursor-ew-resize z-20`}
+                  onMouseDown={(e) => handleStart(e, 'r')}
+                  onTouchStart={(e) => handleStart(e, 'r')}
+                />
               </div>
-
-              {/* 모서리 핸들 */}
-              <div
-                className={`absolute -left-4 -top-4 ${handleStyle} cursor-nwse-resize`}
-                onMouseDown={(e) => handleStart(e, 'tl')}
-                onTouchStart={(e) => handleStart(e, 'tl')}
-              />
-              <div
-                className={`absolute -right-4 -top-4 ${handleStyle} cursor-nesw-resize`}
-                onMouseDown={(e) => handleStart(e, 'tr')}
-                onTouchStart={(e) => handleStart(e, 'tr')}
-              />
-              <div
-                className={`absolute -left-4 -bottom-4 ${handleStyle} cursor-nesw-resize`}
-                onMouseDown={(e) => handleStart(e, 'bl')}
-                onTouchStart={(e) => handleStart(e, 'bl')}
-              />
-              <div
-                className={`absolute -right-4 -bottom-4 ${handleStyle} cursor-nwse-resize`}
-                onMouseDown={(e) => handleStart(e, 'br')}
-                onTouchStart={(e) => handleStart(e, 'br')}
-              />
-
-              {/* 변 핸들 */}
-              <div
-                className={`absolute left-1/2 -translate-x-1/2 -top-2 w-12 h-4 ${edgeHandleStyle} rounded cursor-ns-resize`}
-                onMouseDown={(e) => handleStart(e, 't')}
-                onTouchStart={(e) => handleStart(e, 't')}
-              />
-              <div
-                className={`absolute left-1/2 -translate-x-1/2 -bottom-2 w-12 h-4 ${edgeHandleStyle} rounded cursor-ns-resize`}
-                onMouseDown={(e) => handleStart(e, 'b')}
-                onTouchStart={(e) => handleStart(e, 'b')}
-              />
-              <div
-                className={`absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-12 ${edgeHandleStyle} rounded cursor-ew-resize`}
-                onMouseDown={(e) => handleStart(e, 'l')}
-                onTouchStart={(e) => handleStart(e, 'l')}
-              />
-              <div
-                className={`absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-12 ${edgeHandleStyle} rounded cursor-ew-resize`}
-                onMouseDown={(e) => handleStart(e, 'r')}
-                onTouchStart={(e) => handleStart(e, 'r')}
-              />
-            </div>
-          )}
-
-          <canvas ref={canvasRef} className="hidden" />
+            )}
+          </div>
         </div>
+
+        <canvas ref={canvasRef} className="hidden" />
 
         <div className="p-4 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
           <button

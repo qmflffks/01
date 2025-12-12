@@ -65,18 +65,23 @@ function AppContent() {
 
   // 설정 페이지 라우팅
   if (currentPath === '/settings') {
-    if (!isAdmin) {
-      // 관리자가 아니면 홈으로 리다이렉트
-      window.history.pushState({}, '', '/');
-      setCurrentPath('/');
-    } else {
-      return (
-        <>
-          <Header />
+    return (
+      <>
+        <Header />
+        {isAdmin ? (
           <Settings />
-        </>
-      );
-    }
+        ) : (
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-500 dark:text-gray-400">접근 권한이 없습니다.</p>
+              <a href="/" className="text-primary-500 hover:text-primary-600 mt-4 inline-block">
+                홈으로 돌아가기
+              </a>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   const loadReviews = useCallback(async () => {
