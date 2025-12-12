@@ -36,6 +36,16 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
     }
   }, [imageUrl]);
 
+  // 웹페이지 스크롤 방지
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     if (!imageRef.current) return { x: 0, y: 0 };
 
