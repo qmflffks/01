@@ -1,17 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ReviewCard } from './components/ReviewCard';
 import { NewReviewForm } from './components/NewReviewForm';
 import { AdminProvider, useAdmin } from './contexts/AdminContext';
 import type { Review, Comment } from './types';
 import {
-  fetchPublicReviews,
-  getAdminReviews,
-  addReview as saveReview,
-  deleteReview as removeReview,
-  addComment as saveComment,
-  deleteComment as removeComment,
-  exportReviewsToJson,
+  fetchReviews,
+  addReview,
+  deleteReview,
+  addComment,
+  deleteComment,
 } from './utils/storage';
 
 function AppContent() {
@@ -20,54 +18,54 @@ function AppContent() {
   const [showNewReviewForm, setShowNewReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const loadReviews = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchReviews();
+    setReviews(data);
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    async function loadReviews() {
-      setLoading(true);
-      if (isAdmin) {
-        // 관리자: localStorage에서 로드
-        const adminReviews = getAdminReviews();
-        if (adminReviews.length > 0) {
-          setReviews(adminReviews);
-        } else {
-          // localStorage가 비어있으면 public에서 로드
-          const publicReviews = await fetchPublicReviews();
-          setReviews(publicReviews);
-        }
-      } else {
-        // 일반 방문자: public JSON에서 로드
-        const publicReviews = await fetchPublicReviews();
-        setReviews(publicReviews);
-      }
-      setLoading(false);
-    }
     loadReviews();
-  }, [isAdmin]);
+  }, [loadReviews]);
 
-  const handleAddReview = (review: Review) => {
-    const updated = saveReview(review, reviews);
-    setReviews(updated);
-    setShowNewReviewForm(false);
-  };
-
-  const handleDeleteReview = (reviewId: string) => {
-    if (confirm('이 리뷰를 삭제하시겠습니까?')) {
-      const updated = removeReview(reviewId, reviews);
-      setReviews(updated);
+  const handleAddReview = async (review: Review) => {
+    const success = await addReview(review);
+    if (success) {
+      await loadReviews(); // 새로고침
+      setShowNewReviewForm(false);
+    } else {
+      alert('리뷰 등록에 실패했습니다.');
     }
   };
 
-  const handleAddComment = (reviewId: string, comment: Comment) => {
-    const updated = saveComment(reviewId, comment, reviews);
-    setReviews(updated);
+  const handleDeleteReview = async (reviewId: string) => {
+    if (confirm('이 리뷰를 삭제하시겠습니까?')) {
+      const success = await deleteReview(reviewId);
+      if (success) {
+        await loadReviews();
+      } else {
+        alert('리뷰 삭제에 실패했습니다.');
+      }
+    }
   };
 
-  const handleDeleteComment = (reviewId: string, commentId: string) => {
-    const updated = removeComment(reviewId, commentId, reviews);
-    setReviews(updated);
+  const handleAddComment = async (reviewId: string, comment: Comment) => {
+    const success = await addComment(reviewId, comment);
+    if (success) {
+      await loadReviews();
+    } else {
+      alert('댓글 등록에 실패했습니다.');
+    }
   };
 
-  const handleExport = () => {
-    exportReviewsToJson(reviews);
+  const handleDeleteComment = async (_reviewId: string, commentId: string) => {
+    const success = await deleteComment(commentId);
+    if (success) {
+      await loadReviews();
+    } else {
+      alert('댓글 삭제에 실패했습니다.');
+    }
   };
 
   if (loading) {
@@ -86,7 +84,7 @@ function AppContent() {
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        {/* 관리자 전용: 새 리뷰 작성 및 내보내기 */}
+        {/* 관리자 전용: 새 리뷰 작성 */}
         {isAdmin && (
           <>
             {showNewReviewForm ? (
@@ -97,26 +95,15 @@ function AppContent() {
                 />
               </div>
             ) : (
-              <div className="flex gap-2 mb-6">
-                <button
-                  onClick={() => setShowNewReviewForm(true)}
-                  className="flex-1 p-4 card hover:shadow-lg transition-shadow flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="font-medium">새 리뷰 작성</span>
-                </button>
-                <button
-                  onClick={handleExport}
-                  className="p-4 card hover:shadow-lg transition-shadow text-gray-600 dark:text-gray-300 hover:text-green-500"
-                  title="리뷰 데이터 내보내기"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </button>
-              </div>
+              <button
+                onClick={() => setShowNewReviewForm(true)}
+                className="w-full mb-6 p-4 card hover:shadow-lg transition-shadow flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="font-medium">새 리뷰 작성</span>
+              </button>
             )}
           </>
         )}
