@@ -66,7 +66,7 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
       </div>
 
       {/* 웹툰 정보 입력 */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             웹툰 제목 *
@@ -76,7 +76,7 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
             value={webtoonTitle}
             onChange={(e) => setWebtoonTitle(e.target.value)}
             placeholder="예: 신의 탑"
-            className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
+            className="w-full px-3 py-2 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
           />
         </div>
         <div>
@@ -88,7 +88,7 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
             value={episode}
             onChange={(e) => setEpisode(e.target.value)}
             placeholder="예: 582"
-            className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
+            className="w-full px-3 py-2 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
           />
         </div>
       </div>
@@ -110,21 +110,21 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
           value={firstComment}
           onChange={(e) => setFirstComment(e.target.value)}
           placeholder="이 장면에 대한 첫 코멘트를 남겨보세요..."
-          rows={3}
-          className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+          rows={4}
+          className="w-full px-3 py-2 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none resize-none"
         />
       </div>
 
       {/* 버튼 */}
-      <div className="flex gap-2 pt-2">
+      <div className="flex flex-col sm:flex-row gap-2 pt-2">
         <button
           onClick={handleSubmit}
           disabled={!isValid}
-          className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed py-3 sm:py-2"
         >
           리뷰 등록
         </button>
-        <button onClick={onCancel} className="btn-secondary">
+        <button onClick={onCancel} className="btn-secondary py-3 sm:py-2">
           취소
         </button>
       </div>
