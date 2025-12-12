@@ -15,6 +15,17 @@
         font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       }
     </style>
+    <!-- GitHub Pages SPA redirect script -->
+    <script>
+      // 404.html에서 저장한 경로가 있으면 복원
+      (function() {
+        const redirectPath = sessionStorage.getItem('redirectPath');
+        if (redirectPath) {
+          sessionStorage.removeItem('redirectPath');
+          history.replaceState(null, '', redirectPath);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
