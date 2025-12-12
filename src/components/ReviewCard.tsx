@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import type { Review, Comment } from '../types';
-import { generateId } from '../utils/imageProcessor';
+import { generateId, processImage } from '../utils/imageProcessor';
+import { uploadImage } from '../utils/storage';
 
 interface ReviewCardProps {
   review: Review;
@@ -22,6 +23,9 @@ export function ReviewCard({
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [commentImage, setCommentImage] = useState<string | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % review.imageUrls.length);
@@ -32,11 +36,12 @@ export function ReviewCard({
   };
 
   const handleAddComment = () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !commentImage) return;
 
     const comment: Comment = {
       id: generateId(),
       text: newComment.trim(),
+      imageUrl: commentImage || undefined,
       authorNickname: userNickname || '익명',
       authorEmail: user?.email || '',
       createdAt: new Date(),
@@ -45,7 +50,47 @@ export function ReviewCard({
 
     onAddComment(review.id, comment);
     setNewComment('');
+    setCommentImage(null);
     setShowCommentInput(false);
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setIsProcessingImage(true);
+    try {
+      // 노이즈 + 워터마크 처리 (댓글용 - 작게)
+      const processedDataUrl = await processImage(file, {
+        noiseIntensity: 10,
+        watermarkText: userNickname || '익명',
+        watermarkPosition: 'bottom-right',
+        watermarkOpacity: 0.5,
+      });
+
+      // Supabase Storage에 업로드
+      const storageUrl = await uploadImage(processedDataUrl, 'comment');
+      if (storageUrl) {
+        setCommentImage(storageUrl);
+      }
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      alert('이미지 처리에 실패했습니다.');
+    } finally {
+      setIsProcessingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeCommentImage = () => {
+    setCommentImage(null);
   };
 
   const formatDate = (date: Date) => {
@@ -172,9 +217,19 @@ export function ReviewCard({
                   <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
                     @{comment.authorNickname}
                   </p>
-                  <p className="text-gray-800 dark:text-gray-200 break-words">
-                    {comment.text}
-                  </p>
+                  {comment.text && (
+                    <p className="text-gray-800 dark:text-gray-200 break-words mb-2">
+                      {comment.text}
+                    </p>
+                  )}
+                  {comment.imageUrl && (
+                    <img
+                      src={comment.imageUrl}
+                      alt="댓글 이미지"
+                      className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
+                      style={{ maxHeight: '300px' }}
+                    />
+                  )}
                   <p className="text-xs text-gray-400 mt-1">
                     {formatDate(comment.createdAt)}
                   </p>
@@ -203,15 +258,54 @@ export function ReviewCard({
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddComment()}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && !commentImage && handleAddComment()}
                   placeholder="리뷰 코멘트를 입력하세요..."
                   className="w-full px-3 py-3 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
                   autoFocus
                 />
+
+                {/* 이미지 첨부 */}
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessingImage || !!commentImage}
+                    className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                  >
+                    {isProcessingImage ? '처리 중...' : commentImage ? '✓ 이미지 첨부됨' : '📎 이미지 첨부'}
+                  </button>
+                  {commentImage && !isProcessingImage && (
+                    <button
+                      onClick={removeCommentImage}
+                      className="px-3 py-2 text-sm text-red-500 hover:text-red-600"
+                    >
+                      ✕ 제거
+                    </button>
+                  )}
+                </div>
+
+                {/* 이미지 미리보기 */}
+                {commentImage && (
+                  <div className="relative">
+                    <img
+                      src={commentImage}
+                      alt="첨부 이미지"
+                      className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600"
+                      style={{ maxHeight: '200px' }}
+                    />
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
                     onClick={handleAddComment}
-                    disabled={!newComment.trim()}
+                    disabled={!newComment.trim() && !commentImage}
                     className="flex-1 btn-primary py-2.5 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     등록
@@ -220,6 +314,7 @@ export function ReviewCard({
                     onClick={() => {
                       setShowCommentInput(false);
                       setNewComment('');
+                      setCommentImage(null);
                     }}
                     className="btn-secondary py-2.5 sm:py-2"
                   >
