@@ -13,11 +13,11 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
   const { userNickname, user } = useAdmin();
   const [webtoonTitle, setWebtoonTitle] = useState('');
   const [episode, setEpisode] = useState('');
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [firstComment, setFirstComment] = useState('');
 
   const handleSubmit = () => {
-    if (!webtoonTitle.trim() || !imageUrl) {
+    if (!webtoonTitle.trim() || imageUrls.length === 0) {
       alert('웹툰 제목과 이미지는 필수입니다.');
       return;
     }
@@ -37,7 +37,7 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
       id: generateId(),
       webtoonTitle: webtoonTitle.trim(),
       episode: episode.trim() || undefined,
-      imageUrl,
+      imageUrls,
       authorNickname: userNickname || '익명',
       authorEmail: user?.email || '',
       comments,
@@ -47,7 +47,7 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
     onSubmit(review);
   };
 
-  const isValid = webtoonTitle.trim() && imageUrl;
+  const isValid = webtoonTitle.trim() && imageUrls.length > 0;
 
   return (
     <div className="card p-4 space-y-4">
@@ -98,7 +98,7 @@ export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           웹툰 캡쳐 *
         </label>
-        <ImageUploader onImageProcessed={setImageUrl} />
+        <ImageUploader onImagesProcessed={setImageUrls} />
       </div>
 
       {/* 첫 번째 코멘트 */}

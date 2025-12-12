@@ -61,11 +61,22 @@ export async function fetchReviews(): Promise<Review[]> {
         .eq('review_id', review.id)
         .order('created_at', { ascending: true });
 
+      // image_urls가 JSON 배열이면 파싱, 문자열이면 단일 이미지로 처리 (하위 호환성)
+      let imageUrls: string[] = [];
+      if (review.image_urls) {
+        imageUrls = typeof review.image_urls === 'string'
+          ? JSON.parse(review.image_urls)
+          : review.image_urls;
+      } else if (review.image_url) {
+        // 기존 단일 이미지 필드 지원 (하위 호환성)
+        imageUrls = [review.image_url];
+      }
+
       return {
         id: review.id,
         webtoonTitle: review.webtoon_title,
         episode: review.episode,
-        imageUrl: review.image_url,
+        imageUrls,
         authorNickname: review.author_nickname || '익명',
         authorEmail: review.author_email || '',
         createdAt: new Date(review.created_at),
@@ -90,7 +101,8 @@ export async function addReview(review: Review): Promise<boolean> {
     id: review.id,
     webtoon_title: review.webtoonTitle,
     episode: review.episode || null,
-    image_url: review.imageUrl,
+    image_urls: JSON.stringify(review.imageUrls), // JSON 배열로 저장
+    image_url: review.imageUrls[0] || null, // 첫 번째 이미지 (하위 호환성)
     author_nickname: review.authorNickname,
     author_email: review.authorEmail,
     created_at: review.createdAt.toISOString(),
