@@ -39,9 +39,31 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     if (!imageRef.current) return { x: 0, y: 0 };
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const scaleX = imageSize.width / rect.width;
-    const scaleY = imageSize.height / rect.height;
+    const img = imageRef.current;
+    const rect = img.getBoundingClientRect();
+
+    // 이미지의 실제 표시 크기 계산 (object-contain 고려)
+    const naturalRatio = imageSize.width / imageSize.height;
+    const containerRatio = rect.width / rect.height;
+
+    let displayWidth, displayHeight, offsetX, offsetY;
+
+    if (containerRatio > naturalRatio) {
+      // 이미지가 높이에 맞춰짐 (좌우 여백)
+      displayHeight = rect.height;
+      displayWidth = displayHeight * naturalRatio;
+      offsetX = (rect.width - displayWidth) / 2;
+      offsetY = 0;
+    } else {
+      // 이미지가 너비에 맞춰짐 (상하 여백)
+      displayWidth = rect.width;
+      displayHeight = displayWidth / naturalRatio;
+      offsetX = 0;
+      offsetY = (rect.height - displayHeight) / 2;
+    }
+
+    const scaleX = imageSize.width / displayWidth;
+    const scaleY = imageSize.height / displayHeight;
 
     let clientX: number, clientY: number;
     if ('touches' in e) {
@@ -53,8 +75,8 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
     }
 
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: (clientX - rect.left - offsetX) * scaleX,
+      y: (clientY - rect.top - offsetY) * scaleY,
     };
   };
 
@@ -173,13 +195,35 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
   const getCropStyle = () => {
     if (!imageRef.current) return {};
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const scaleX = rect.width / imageSize.width;
-    const scaleY = rect.height / imageSize.height;
+    const img = imageRef.current;
+    const rect = img.getBoundingClientRect();
+
+    // 이미지의 실제 표시 크기 계산 (object-contain 고려)
+    const naturalRatio = imageSize.width / imageSize.height;
+    const containerRatio = rect.width / rect.height;
+
+    let displayWidth, displayHeight, offsetX, offsetY;
+
+    if (containerRatio > naturalRatio) {
+      // 이미지가 높이에 맞춰짐 (좌우 여백)
+      displayHeight = rect.height;
+      displayWidth = displayHeight * naturalRatio;
+      offsetX = (rect.width - displayWidth) / 2;
+      offsetY = 0;
+    } else {
+      // 이미지가 너비에 맞춰짐 (상하 여백)
+      displayWidth = rect.width;
+      displayHeight = displayWidth / naturalRatio;
+      offsetX = 0;
+      offsetY = (rect.height - displayHeight) / 2;
+    }
+
+    const scaleX = displayWidth / imageSize.width;
+    const scaleY = displayHeight / imageSize.height;
 
     return {
-      left: `${cropArea.x * scaleX}px`,
-      top: `${cropArea.y * scaleY}px`,
+      left: `${cropArea.x * scaleX + offsetX}px`,
+      top: `${cropArea.y * scaleY + offsetY}px`,
       width: `${cropArea.width * scaleX}px`,
       height: `${cropArea.height * scaleY}px`,
     };
