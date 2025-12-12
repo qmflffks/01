@@ -16,6 +16,8 @@ interface ProcessedImage {
 
 const MAX_IMAGES = 4;
 
+type WatermarkPosition = 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+
 export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
   const { userNickname } = useAdmin();
   const [isDragging, setIsDragging] = useState(false);
@@ -26,6 +28,8 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewSourceImage, setPreviewSourceImage] = useState<string | null>(null); // 워터마크 변경용 원본
+  const [watermarkPosition, setWatermarkPosition] = useState<WatermarkPosition>('center');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback((file: File) => {
@@ -59,11 +63,14 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
       const blob = await response.blob();
       const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
 
+      // 워터마크 변경용 원본 저장
+      setPreviewSourceImage(croppedImageUrl);
+
       // 노이즈 + 워터마크 처리
       const processedDataUrl = await processImage(file, {
         noiseIntensity: 15,
         watermarkText: userNickname || '익명',
-        watermarkPosition: 'center',
+        watermarkPosition: watermarkPosition,
         watermarkOpacity: 0.7,
       });
 
@@ -78,7 +85,7 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
       setOriginalImage(null);
       setCurrentFile(null);
     }
-  }, [userNickname]);
+  }, [userNickname, watermarkPosition]);
 
   const handleSkipCrop = useCallback(async () => {
     if (!originalImage || !currentFile) return;
@@ -90,11 +97,14 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
       const blob = await response.blob();
       const file = new File([blob], 'original.jpg', { type: 'image/jpeg' });
 
+      // 워터마크 변경용 원본 저장
+      setPreviewSourceImage(originalImage);
+
       // 노이즈 + 워터마크 처리 (자르기 없이)
       const processedDataUrl = await processImage(file, {
         noiseIntensity: 15,
         watermarkText: userNickname || '익명',
-        watermarkPosition: 'center',
+        watermarkPosition: watermarkPosition,
         watermarkOpacity: 0.7,
       });
 
@@ -109,7 +119,7 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
       setOriginalImage(null);
       setCurrentFile(null);
     }
-  }, [originalImage, currentFile, userNickname]);
+  }, [originalImage, currentFile, userNickname, watermarkPosition]);
 
   const handleConfirmPreview = useCallback(async () => {
     if (!previewImage) return;
@@ -164,7 +174,36 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
   const handleCancelPreview = useCallback(() => {
     setShowPreview(false);
     setPreviewImage(null);
+    setPreviewSourceImage(null);
+    setWatermarkPosition('center');
   }, []);
+
+  const handleChangeWatermark = useCallback(async (position: WatermarkPosition) => {
+    if (!previewSourceImage) return;
+    setWatermarkPosition(position);
+    setIsProcessing(true);
+
+    try {
+      // 원본 이미지를 다시 처리 (새로운 워터마크 위치로)
+      const response = await fetch(previewSourceImage);
+      const blob = await response.blob();
+      const file = new File([blob], 'reprocess.jpg', { type: 'image/jpeg' });
+
+      const processedDataUrl = await processImage(file, {
+        noiseIntensity: 15,
+        watermarkText: userNickname || '익명',
+        watermarkPosition: position,
+        watermarkOpacity: 0.7,
+      });
+
+      setPreviewImage(processedDataUrl);
+    } catch (error) {
+      console.error('Image reprocessing failed:', error);
+      alert('워터마크 변경에 실패했습니다.');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [previewSourceImage, userNickname]);
 
   const removeImage = useCallback((id: string) => {
     const updatedImages = processedImages.filter(img => img.id !== id);
@@ -346,6 +385,70 @@ export function ImageUploader({ onImagesProcessed }: ImageUploaderProps) {
                 alt="Preview"
                 className="max-w-full max-h-[50vh] mx-auto rounded-lg object-contain"
               />
+            </div>
+
+            {/* 워터마크 위치 선택 */}
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                워터마크 위치
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleChangeWatermark('top-left')}
+                  disabled={isProcessing}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                    watermarkPosition === 'top-left'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ↖ 좌상단
+                </button>
+                <button
+                  onClick={() => handleChangeWatermark('top-right')}
+                  disabled={isProcessing}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                    watermarkPosition === 'top-right'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ↗ 우상단
+                </button>
+                <button
+                  onClick={() => handleChangeWatermark('center')}
+                  disabled={isProcessing}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                    watermarkPosition === 'center'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ⊙ 중앙
+                </button>
+                <button
+                  onClick={() => handleChangeWatermark('bottom-left')}
+                  disabled={isProcessing}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                    watermarkPosition === 'bottom-left'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ↙ 좌하단
+                </button>
+                <button
+                  onClick={() => handleChangeWatermark('bottom-right')}
+                  disabled={isProcessing}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors disabled:opacity-50 ${
+                    watermarkPosition === 'bottom-right'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  ↘ 우하단
+                </button>
+              </div>
             </div>
 
             <div className="p-4 flex gap-3 border-t border-gray-200 dark:border-gray-700">
