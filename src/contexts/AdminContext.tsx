@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { fetchUserNickname, updateUserNickname as updateUserNicknameDB } from '../utils/storage';
 import type { User } from '@supabase/supabase-js';
 
 // 관리자 이메일 (이 이메일만 관리자로 인정)
@@ -13,7 +14,7 @@ interface AdminContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
-  setUserNickname: (nickname: string) => void;
+  setUserNickname: (nickname: string) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | null>(null);
@@ -25,26 +26,23 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
-  // 사용자 닉네임 localStorage에서 불러오기
+  // 사용자 닉네임 Supabase에서 불러오기
   useEffect(() => {
     if (user?.email) {
-      const savedNickname = localStorage.getItem(`nickname_${user.email}`);
-      if (savedNickname) {
-        setUserNicknameState(savedNickname);
-      } else {
-        // 기본 닉네임 설정 (이메일에서 @ 앞부분)
-        const defaultNickname = user.email.split('@')[0];
-        setUserNicknameState(defaultNickname);
-      }
+      fetchUserNickname(user.email).then((nickname) => {
+        setUserNicknameState(nickname);
+      });
     } else {
       setUserNicknameState('');
     }
   }, [user]);
 
-  const setUserNickname = (nickname: string) => {
+  const setUserNickname = async (nickname: string) => {
     if (user?.email) {
-      localStorage.setItem(`nickname_${user.email}`, nickname);
-      setUserNicknameState(nickname);
+      const success = await updateUserNicknameDB(user.email, nickname);
+      if (success) {
+        setUserNicknameState(nickname);
+      }
     }
   };
 

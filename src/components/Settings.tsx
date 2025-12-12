@@ -33,11 +33,12 @@ export function Settings() {
     setMessage('');
 
     // 블로그 제목 저장
-    const success = await updateSettings(blogSettings);
+    const blogSuccess = await updateSettings(blogSettings);
 
-    if (success) {
-      // 개인 닉네임 저장 (localStorage)
-      setUserNickname(nickname);
+    // 개인 닉네임 저장 (Supabase users 테이블)
+    await setUserNickname(nickname);
+
+    if (blogSuccess) {
       setMessage('설정이 저장되었습니다! 변경사항이 적용되려면 페이지를 새로고침해주세요.');
     } else {
       setMessage('설정 저장에 실패했습니다.');

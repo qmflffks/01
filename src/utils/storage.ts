@@ -170,3 +170,54 @@ export async function updateSettings(settings: BlogSettings): Promise<boolean> {
 
   return true;
 }
+
+// 사용자 닉네임 조회 (users 테이블)
+export async function fetchUserNickname(email: string): Promise<string> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('nickname')
+    .eq('email', email)
+    .single();
+
+  if (error || !data) {
+    // 기본 닉네임: 이메일 @ 앞부분
+    return email.split('@')[0];
+  }
+
+  return data.nickname;
+}
+
+// 사용자 닉네임 업데이트 (없으면 생성)
+export async function updateUserNickname(email: string, nickname: string): Promise<boolean> {
+  // 기존 사용자 확인
+  const { data: existing } = await supabase
+    .from('users')
+    .select('email')
+    .eq('email', email)
+    .single();
+
+  if (existing) {
+    // 업데이트
+    const { error } = await supabase
+      .from('users')
+      .update({ nickname })
+      .eq('email', email);
+
+    if (error) {
+      console.error('Failed to update user nickname:', error);
+      return false;
+    }
+  } else {
+    // 삽입 (새 사용자)
+    const { error } = await supabase
+      .from('users')
+      .insert({ email, nickname });
+
+    if (error) {
+      console.error('Failed to insert user:', error);
+      return false;
+    }
+  }
+
+  return true;
+}
