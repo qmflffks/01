@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Review, Comment } from '../types';
+import type { Review, Comment, Settings } from '../types';
 
 // Supabase에서 리뷰 + 댓글 불러오기
 export async function fetchReviews(): Promise<Review[]> {
@@ -100,6 +100,55 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 
   if (error) {
     console.error('Failed to delete comment:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Settings 조회
+export async function fetchSettings(): Promise<Settings | null> {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Failed to fetch settings:', error);
+    return null;
+  }
+
+  return {
+    id: data.id,
+    blogTitle: data.blog_title,
+    nickname: data.nickname,
+    createdAt: new Date(data.created_at),
+  };
+}
+
+// Settings 업데이트 (관리자 전용)
+export async function updateSettings(blogTitle: string, nickname: string): Promise<boolean> {
+  // settings 테이블의 첫 번째 레코드를 가져옴
+  const { data: currentSettings } = await supabase
+    .from('settings')
+    .select('id')
+    .single();
+
+  if (!currentSettings) {
+    console.error('No settings found');
+    return false;
+  }
+
+  const { error } = await supabase
+    .from('settings')
+    .update({
+      blog_title: blogTitle,
+      nickname: nickname
+    })
+    .eq('id', currentSettings.id);
+
+  if (error) {
+    console.error('Failed to update settings:', error);
     return false;
   }
 

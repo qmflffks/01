@@ -25,3 +25,10 @@ export interface ImageProcessingOptions {
   watermarkPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   watermarkOpacity: number;
 }
+
+export interface Settings {
+  id: string;
+  blogTitle: string;
+  nickname: string;
+  createdAt: Date;
+}

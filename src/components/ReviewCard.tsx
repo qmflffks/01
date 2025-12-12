@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Review, Comment } from '../types';
 import { generateId } from '../utils/imageProcessor';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface ReviewCardProps {
   review: Review;
@@ -19,6 +20,7 @@ export function ReviewCard({
 }: ReviewCardProps) {
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
+  const { settings } = useSettings();
 
   const handleAddComment = () => {
     if (!newComment.trim()) return;
@@ -52,10 +54,14 @@ export function ReviewCard({
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
-            <span className="text-primary-600 dark:text-primary-400 font-bold">파</span>
+            <span className="text-primary-600 dark:text-primary-400 font-bold">
+              {settings?.nickname?.[0] || '파'}
+            </span>
           </div>
           <div>
-            <p className="font-semibold text-gray-900 dark:text-white">@파이</p>
+            <p className="font-semibold text-gray-900 dark:text-white">
+              @{settings?.nickname || '파이'}
+            </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {formatDate(review.createdAt)}
             </p>

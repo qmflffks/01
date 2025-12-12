@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { processImage } from '../utils/imageProcessor';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface ImageUploaderProps {
   onImageProcessed: (imageUrl: string) => void;
@@ -10,6 +11,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { settings } = useSettings();
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -21,7 +23,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
     try {
       const processedImage = await processImage(file, {
         noiseIntensity: 15,
-        watermarkText: '파이',
+        watermarkText: settings?.nickname || '파이',
         watermarkPosition: 'bottom-right',
         watermarkOpacity: 0.7,
       });
@@ -33,7 +35,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
     } finally {
       setIsProcessing(false);
     }
-  }, [onImageProcessed]);
+  }, [onImageProcessed, settings?.nickname]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,7 +106,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
                 웹툰 캡쳐를 드래그하거나 클릭해서 업로드
               </p>
               <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-                자동으로 노이즈 + 워터마크(@파이)가 적용됩니다
+                자동으로 노이즈 + 워터마크(@{settings?.nickname || '파이'})가 적용됩니다
               </p>
             </>
           )}

@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { ReviewCard } from './components/ReviewCard';
 import { NewReviewForm } from './components/NewReviewForm';
 import { AdminProvider, useAdmin } from './contexts/AdminContext';
+import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import type { Review, Comment } from './types';
 import {
   fetchReviews,
@@ -14,6 +15,7 @@ import {
 
 function AppContent() {
   const { isAdmin } = useAdmin();
+  const { settings } = useSettings();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showNewReviewForm, setShowNewReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -28,6 +30,13 @@ function AppContent() {
   useEffect(() => {
     loadReviews();
   }, [loadReviews]);
+
+  // 동적 title 업데이트
+  useEffect(() => {
+    if (settings?.blogTitle) {
+      document.title = settings.blogTitle;
+    }
+  }, [settings?.blogTitle]);
 
   const handleAddReview = async (review: Review) => {
     const success = await addReview(review);
@@ -138,7 +147,7 @@ function AppContent() {
       {/* 푸터 */}
       <footer className="border-t border-gray-200 dark:border-gray-700 py-6 mt-12">
         <div className="max-w-2xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>파이의 웹툰 리뷰 블로그</p>
+          <p>{settings?.blogTitle || '파이의 웹툰 리뷰 블로그'}</p>
           <p className="mt-1">캡쳐 이미지에는 자동으로 노이즈와 워터마크가 적용됩니다.</p>
         </div>
       </footer>
@@ -149,7 +158,9 @@ function AppContent() {
 function App() {
   return (
     <AdminProvider>
-      <AppContent />
+      <SettingsProvider>
+        <AppContent />
+      </SettingsProvider>
     </AdminProvider>
   );
 }
