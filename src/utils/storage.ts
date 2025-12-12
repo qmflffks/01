@@ -1,6 +1,45 @@
 import { supabase } from '../lib/supabase';
 import type { Review, Comment, BlogSettings } from '../types';
 
+// Supabase Storage에 이미지 업로드
+export async function uploadImage(dataUrl: string, fileName: string): Promise<string | null> {
+  try {
+    // data URL을 Blob으로 변환
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    // 파일명 생성 (충돌 방지를 위해 타임스탬프 추가)
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 9);
+    const fileExtension = 'jpg'; // JPEG로 통일
+    const storagePath = `${timestamp}-${randomString}-${fileName}.${fileExtension}`;
+
+    // Supabase Storage에 업로드
+    const { data, error } = await supabase.storage
+      .from('images') // 'images' 버킷 사용 (미리 생성되어 있어야 함)
+      .upload(storagePath, blob, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Failed to upload image to storage:', error);
+      return null;
+    }
+
+    // Public URL 생성
+    const { data: urlData } = supabase.storage
+      .from('images')
+      .getPublicUrl(data.path);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Failed to process image for upload:', error);
+    return null;
+  }
+}
+
 // Supabase에서 리뷰 + 댓글 불러오기
 export async function fetchReviews(): Promise<Review[]> {
   const { data: reviews, error } = await supabase

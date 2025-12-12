@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { processImage } from '../utils/imageProcessor';
+import { uploadImage } from '../utils/storage';
 import { ImageEditor } from './ImageEditor';
 import { useAdmin } from '../contexts/AdminContext';
 
@@ -42,15 +43,23 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
       const file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
 
       // 노이즈 + 워터마크 처리
-      const processedImage = await processImage(file, {
+      const processedDataUrl = await processImage(file, {
         noiseIntensity: 15,
         watermarkText: userNickname || '익명',
         watermarkPosition: 'center',
         watermarkOpacity: 0.7,
       });
 
-      setPreview(processedImage);
-      onImageProcessed(processedImage);
+      // Supabase Storage에 업로드
+      const storageUrl = await uploadImage(processedDataUrl, 'cropped');
+
+      if (!storageUrl) {
+        alert('이미지 업로드에 실패했습니다.');
+        return;
+      }
+
+      setPreview(storageUrl);
+      onImageProcessed(storageUrl);
     } catch (error) {
       console.error('Image processing failed:', error);
       alert('이미지 처리에 실패했습니다.');
@@ -71,15 +80,23 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
       const file = new File([blob], 'original.jpg', { type: 'image/jpeg' });
 
       // 노이즈 + 워터마크 처리 (자르기 없이)
-      const processedImage = await processImage(file, {
+      const processedDataUrl = await processImage(file, {
         noiseIntensity: 15,
         watermarkText: userNickname || '익명',
         watermarkPosition: 'center',
         watermarkOpacity: 0.7,
       });
 
-      setPreview(processedImage);
-      onImageProcessed(processedImage);
+      // Supabase Storage에 업로드
+      const storageUrl = await uploadImage(processedDataUrl, 'original');
+
+      if (!storageUrl) {
+        alert('이미지 업로드에 실패했습니다.');
+        return;
+      }
+
+      setPreview(storageUrl);
+      onImageProcessed(storageUrl);
     } catch (error) {
       console.error('Image processing failed:', error);
       alert('이미지 처리에 실패했습니다.');
@@ -154,7 +171,7 @@ export function ImageUploader({ onImageProcessed }: ImageUploaderProps) {
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
                 <p className="text-gray-600 dark:text-gray-400">
-                  노이즈 및 워터마크 적용 중...
+                  처리 중... (노이즈 + 워터마크 + Storage 업로드)
                 </p>
               </div>
             ) : (
