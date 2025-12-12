@@ -140,37 +140,39 @@ export function ReviewCard({
         {isAdmin && (
           <>
             {showCommentInput ? (
-              <div className="flex gap-2">
+              <div className="space-y-2">
                 <input
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddComment()}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddComment()}
                   placeholder="리뷰 코멘트를 입력하세요..."
-                  className="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
+                  className="w-full px-3 py-3 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
                   autoFocus
                 />
-                <button
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim()}
-                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  등록
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCommentInput(false);
-                    setNewComment('');
-                  }}
-                  className="btn-secondary"
-                >
-                  취소
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim()}
+                    className="flex-1 btn-primary py-2.5 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    등록
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCommentInput(false);
+                      setNewComment('');
+                    }}
+                    className="btn-secondary py-2.5 sm:py-2"
+                  >
+                    취소
+                  </button>
+                </div>
               </div>
             ) : (
               <button
                 onClick={() => setShowCommentInput(true)}
-                className="w-full py-2 text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 sm:py-2 text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
