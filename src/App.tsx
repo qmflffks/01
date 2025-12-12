@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ReviewCard } from './components/ReviewCard';
 import { NewReviewForm } from './components/NewReviewForm';
+import { Settings } from './components/Settings';
 import { AdminProvider, useAdmin } from './contexts/AdminContext';
 import type { Review, Comment } from './types';
 import {
@@ -10,13 +11,68 @@ import {
   deleteReview,
   addComment,
   deleteComment,
+  fetchSettings,
 } from './utils/storage';
 
 function AppContent() {
   const { isAdmin } = useAdmin();
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showNewReviewForm, setShowNewReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [blogTitle, setBlogTitle] = useState('파이의 웹툰 리뷰');
+
+  // 블로그 설정 불러오기
+  useEffect(() => {
+    fetchSettings().then((settings) => {
+      setBlogTitle(settings.blogTitle);
+    });
+  }, []);
+
+  // URL 변경 감지
+  useEffect(() => {
+    const handlePathChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePathChange);
+
+    // 링크 클릭 감지
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+
+      if (link && link.href.startsWith(window.location.origin)) {
+        e.preventDefault();
+        const path = new URL(link.href).pathname;
+        window.history.pushState({}, '', path);
+        setCurrentPath(path);
+      }
+    };
+
+    document.addEventListener('click', handleClick);
+
+    return () => {
+      window.removeEventListener('popstate', handlePathChange);
+      document.removeEventListener('click', handleClick);
+    };
+  }, []);
+
+  // 설정 페이지 라우팅
+  if (currentPath === '/settings') {
+    if (!isAdmin) {
+      // 관리자가 아니면 홈으로 리다이렉트
+      window.history.pushState({}, '', '/');
+      setCurrentPath('/');
+    } else {
+      return (
+        <>
+          <Header />
+          <Settings />
+        </>
+      );
+    }
+  }
 
   const loadReviews = useCallback(async () => {
     setLoading(true);
@@ -138,7 +194,7 @@ function AppContent() {
       {/* 푸터 */}
       <footer className="border-t border-gray-200 dark:border-gray-700 py-6 mt-12">
         <div className="max-w-2xl mx-auto px-4 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>파이의 웹툰 리뷰 블로그</p>
+          <p>{blogTitle}</p>
           <p className="mt-1">캡쳐 이미지에는 자동으로 노이즈와 워터마크가 적용됩니다.</p>
         </div>
       </footer>

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Review, Comment } from '../types';
+import type { Review, Comment, BlogSettings } from '../types';
 
 // Supabase에서 리뷰 + 댓글 불러오기
 export async function fetchReviews(): Promise<Review[]> {
@@ -101,6 +101,67 @@ export async function deleteComment(commentId: string): Promise<boolean> {
   if (error) {
     console.error('Failed to delete comment:', error);
     return false;
+  }
+
+  return true;
+}
+
+// 블로그 설정 불러오기
+export async function fetchSettings(): Promise<BlogSettings> {
+  const { data, error } = await supabase
+    .from('settings')
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    // 기본값 반환
+    return {
+      blogTitle: '파이의 웹툰 리뷰',
+      nickname: '파이',
+    };
+  }
+
+  return {
+    blogTitle: data.blog_title,
+    nickname: data.nickname,
+  };
+}
+
+// 블로그 설정 업데이트
+export async function updateSettings(settings: BlogSettings): Promise<boolean> {
+  // settings 테이블에 데이터가 있는지 확인
+  const { data: existing } = await supabase
+    .from('settings')
+    .select('id')
+    .single();
+
+  if (existing) {
+    // 업데이트
+    const { error } = await supabase
+      .from('settings')
+      .update({
+        blog_title: settings.blogTitle,
+        nickname: settings.nickname,
+      })
+      .eq('id', existing.id);
+
+    if (error) {
+      console.error('Failed to update settings:', error);
+      return false;
+    }
+  } else {
+    // 삽입
+    const { error } = await supabase
+      .from('settings')
+      .insert({
+        blog_title: settings.blogTitle,
+        nickname: settings.nickname,
+      });
+
+    if (error) {
+      console.error('Failed to insert settings:', error);
+      return false;
+    }
   }
 
   return true;
