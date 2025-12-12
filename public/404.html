@@ -5,9 +5,9 @@
     <title>Redirecting...</title>
     <script>
       // GitHub Pages SPA redirect trick
-      // 현재 경로를 sessionStorage에 저장하고 루트로 리다이렉트
+      // 현재 경로를 sessionStorage에 저장하고 앱 루트로 리다이렉트
       sessionStorage.setItem('redirectPath', location.pathname + location.search + location.hash);
-      location.replace(location.origin + location.pathname.split('/').slice(0, -1).join('/') + '/');
+      location.replace(location.origin + '/01/');
     </script>
   </head>
   <body>

@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // GitHub Pages 배포를 위한 상대 경로 설정
+  base: '/01/', // GitHub Pages 프로젝트 페이지 경로
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
