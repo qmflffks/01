@@ -1,45 +1,38 @@
 import { useState, useEffect } from 'react';
-import { fetchSettings, updateSettings } from '../utils/storage';
 import { useAdmin } from '../contexts/AdminContext';
-import type { BlogSettings } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function Settings() {
   const { userNickname, setUserNickname, user } = useAdmin();
-  const [blogSettings, setBlogSettings] = useState<BlogSettings>({
-    blogTitle: '파이의 웹툰 리뷰',
-  });
+  const { blogTitle, loading: settingsLoading, updateSettings } = useSettings();
+  const [newBlogTitle, setNewBlogTitle] = useState('');
   const [nickname, setNickname] = useState('');
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
+  // 설정값 로드 완료 시 초기화
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (!settingsLoading) {
+      setNewBlogTitle(blogTitle);
+    }
+  }, [blogTitle, settingsLoading]);
 
   useEffect(() => {
     setNickname(userNickname);
   }, [userNickname]);
-
-  const loadSettings = async () => {
-    setLoading(true);
-    const data = await fetchSettings();
-    setBlogSettings(data);
-    setLoading(false);
-  };
 
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
 
     // 블로그 제목 저장
-    const blogSuccess = await updateSettings(blogSettings);
+    const blogSuccess = await updateSettings({ blogTitle: newBlogTitle });
 
     // 개인 닉네임 저장 (Supabase users 테이블)
     await setUserNickname(nickname);
 
     if (blogSuccess) {
-      setMessage('설정이 저장되었습니다! 변경사항이 적용되려면 페이지를 새로고침해주세요.');
+      setMessage('설정이 저장되었습니다!');
     } else {
       setMessage('설정 저장에 실패했습니다.');
     }
@@ -50,7 +43,7 @@ export function Settings() {
     setTimeout(() => setMessage(''), 3000);
   };
 
-  if (loading) {
+  if (settingsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -88,8 +81,8 @@ export function Settings() {
             <input
               type="text"
               id="blogTitle"
-              value={blogSettings.blogTitle}
-              onChange={(e) => setBlogSettings({ ...blogSettings, blogTitle: e.target.value })}
+              value={newBlogTitle}
+              onChange={(e) => setNewBlogTitle(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
                 focus:ring-2 focus:ring-primary-500 focus:border-transparent
                 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
