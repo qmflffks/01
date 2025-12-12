@@ -22,6 +22,17 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [blogTitle, setBlogTitle] = useState('파이의 웹툰 리뷰');
 
+  // base path 제거한 실제 경로 계산
+  const getRelativePath = (pathname: string) => {
+    const base = '/01/'; // vite.config.ts의 base와 동일
+    if (pathname.startsWith(base)) {
+      return pathname.slice(base.length - 1); // '/01/' -> '/', '/01/settings' -> '/settings'
+    }
+    return pathname;
+  };
+
+  const relativePath = getRelativePath(currentPath);
+
   // 블로그 설정 불러오기
   useEffect(() => {
     fetchSettings().then((settings) => {
@@ -64,7 +75,7 @@ function AppContent() {
   }, []);
 
   // 설정 페이지 라우팅
-  if (currentPath === '/settings') {
+  if (relativePath === '/settings') {
     return (
       <>
         <Header />
@@ -74,7 +85,7 @@ function AppContent() {
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
             <div className="text-center">
               <p className="text-gray-500 dark:text-gray-400">접근 권한이 없습니다.</p>
-              <a href="/" className="text-primary-500 hover:text-primary-600 mt-4 inline-block">
+              <a href="./" className="text-primary-500 hover:text-primary-600 mt-4 inline-block">
                 홈으로 돌아가기
               </a>
             </div>
