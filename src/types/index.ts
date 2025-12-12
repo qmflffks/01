@@ -22,6 +22,18 @@ export interface Reaction {
 export interface ImageProcessingOptions {
   noiseIntensity: number;
   watermarkText: string;
-  watermarkPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  watermarkPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center';
   watermarkOpacity: number;
+}
+
+export interface BlogSettings {
+  blogTitle: string;
+  nickname: string;
+}
+
+export interface CropArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
