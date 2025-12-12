@@ -196,34 +196,39 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
     if (!imageRef.current) return {};
 
     const img = imageRef.current;
-    const rect = img.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
+    const parentRect = img.parentElement!.getBoundingClientRect();
+
+    // 부모 컨테이너 기준 이미지 위치
+    const imgLeftInParent = imgRect.left - parentRect.left;
+    const imgTopInParent = imgRect.top - parentRect.top;
 
     // 이미지의 실제 표시 크기 계산 (object-contain 고려)
     const naturalRatio = imageSize.width / imageSize.height;
-    const containerRatio = rect.width / rect.height;
+    const containerRatio = imgRect.width / imgRect.height;
 
     let displayWidth, displayHeight, offsetX, offsetY;
 
     if (containerRatio > naturalRatio) {
       // 이미지가 높이에 맞춰짐 (좌우 여백)
-      displayHeight = rect.height;
+      displayHeight = imgRect.height;
       displayWidth = displayHeight * naturalRatio;
-      offsetX = (rect.width - displayWidth) / 2;
+      offsetX = (imgRect.width - displayWidth) / 2;
       offsetY = 0;
     } else {
       // 이미지가 너비에 맞춰짐 (상하 여백)
-      displayWidth = rect.width;
+      displayWidth = imgRect.width;
       displayHeight = displayWidth / naturalRatio;
       offsetX = 0;
-      offsetY = (rect.height - displayHeight) / 2;
+      offsetY = (imgRect.height - displayHeight) / 2;
     }
 
     const scaleX = displayWidth / imageSize.width;
     const scaleY = displayHeight / imageSize.height;
 
     return {
-      left: `${cropArea.x * scaleX + offsetX}px`,
-      top: `${cropArea.y * scaleY + offsetY}px`,
+      left: `${imgLeftInParent + cropArea.x * scaleX + offsetX}px`,
+      top: `${imgTopInParent + cropArea.y * scaleY + offsetY}px`,
       width: `${cropArea.width * scaleX}px`,
       height: `${cropArea.height * scaleY}px`,
     };

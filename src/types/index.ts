@@ -12,6 +12,7 @@ export interface Review {
 export interface Comment {
   id: string;
   text: string;
+  imageUrl?: string; // 댓글에 첨부된 이미지 (선택)
   authorNickname: string;
   authorEmail: string;
   createdAt: Date;

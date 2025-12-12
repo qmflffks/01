@@ -83,6 +83,7 @@ export async function fetchReviews(): Promise<Review[]> {
         comments: (comments || []).map((c) => ({
           id: c.id,
           text: c.text,
+          imageUrl: c.image_url,
           authorNickname: c.author_nickname || '익명',
           authorEmail: c.author_email || '',
           createdAt: new Date(c.created_at),
@@ -140,6 +141,7 @@ export async function addComment(reviewId: string, comment: Comment): Promise<bo
     id: comment.id,
     review_id: reviewId,
     text: comment.text,
+    image_url: comment.imageUrl || null,
     author_nickname: comment.authorNickname,
     author_email: comment.authorEmail,
     created_at: comment.createdAt.toISOString(),
