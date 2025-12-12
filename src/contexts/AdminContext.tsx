@@ -9,9 +9,11 @@ const ADMIN_EMAIL = 'zuika1508@gmail.com';
 interface AdminContextType {
   isAdmin: boolean;
   user: User | null;
+  userNickname: string;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
+  setUserNickname: (nickname: string) => void;
 }
 
 const AdminContext = createContext<AdminContextType | null>(null);
@@ -19,8 +21,32 @@ const AdminContext = createContext<AdminContextType | null>(null);
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userNickname, setUserNicknameState] = useState<string>('');
 
   const isAdmin = user?.email === ADMIN_EMAIL;
+
+  // 사용자 닉네임 localStorage에서 불러오기
+  useEffect(() => {
+    if (user?.email) {
+      const savedNickname = localStorage.getItem(`nickname_${user.email}`);
+      if (savedNickname) {
+        setUserNicknameState(savedNickname);
+      } else {
+        // 기본 닉네임 설정 (이메일에서 @ 앞부분)
+        const defaultNickname = user.email.split('@')[0];
+        setUserNicknameState(defaultNickname);
+      }
+    } else {
+      setUserNicknameState('');
+    }
+  }, [user]);
+
+  const setUserNickname = (nickname: string) => {
+    if (user?.email) {
+      localStorage.setItem(`nickname_${user.email}`, nickname);
+      setUserNicknameState(nickname);
+    }
+  };
 
   useEffect(() => {
     // 현재 세션 확인
@@ -55,7 +81,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AdminContext.Provider value={{ isAdmin, user, loading, login, logout }}>
+    <AdminContext.Provider value={{ isAdmin, user, userNickname, loading, login, logout, setUserNickname }}>
       {children}
     </AdminContext.Provider>
   );

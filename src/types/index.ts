@@ -3,6 +3,8 @@ export interface Review {
   webtoonTitle: string;
   episode?: string;
   imageUrl: string;
+  authorNickname: string;
+  authorEmail: string;
   comments: Comment[];
   createdAt: Date;
 }
@@ -10,6 +12,8 @@ export interface Review {
 export interface Comment {
   id: string;
   text: string;
+  authorNickname: string;
+  authorEmail: string;
   createdAt: Date;
   reactions: Reaction[];
 }
@@ -28,7 +32,11 @@ export interface ImageProcessingOptions {
 
 export interface BlogSettings {
   blogTitle: string;
+}
+
+export interface UserSettings {
   nickname: string;
+  email: string;
 }
 
 export interface CropArea {

@@ -27,10 +27,14 @@ export async function fetchReviews(): Promise<Review[]> {
         webtoonTitle: review.webtoon_title,
         episode: review.episode,
         imageUrl: review.image_url,
+        authorNickname: review.author_nickname || '익명',
+        authorEmail: review.author_email || '',
         createdAt: new Date(review.created_at),
         comments: (comments || []).map((c) => ({
           id: c.id,
           text: c.text,
+          authorNickname: c.author_nickname || '익명',
+          authorEmail: c.author_email || '',
           createdAt: new Date(c.created_at),
           reactions: [],
         })),
@@ -48,6 +52,8 @@ export async function addReview(review: Review): Promise<boolean> {
     webtoon_title: review.webtoonTitle,
     episode: review.episode || null,
     image_url: review.imageUrl,
+    author_nickname: review.authorNickname,
+    author_email: review.authorEmail,
     created_at: review.createdAt.toISOString(),
   });
 
@@ -83,6 +89,8 @@ export async function addComment(reviewId: string, comment: Comment): Promise<bo
     id: comment.id,
     review_id: reviewId,
     text: comment.text,
+    author_nickname: comment.authorNickname,
+    author_email: comment.authorEmail,
     created_at: comment.createdAt.toISOString(),
   });
 
@@ -117,13 +125,11 @@ export async function fetchSettings(): Promise<BlogSettings> {
     // 기본값 반환
     return {
       blogTitle: '파이의 웹툰 리뷰',
-      nickname: '파이',
     };
   }
 
   return {
     blogTitle: data.blog_title,
-    nickname: data.nickname,
   };
 }
 
@@ -141,7 +147,6 @@ export async function updateSettings(settings: BlogSettings): Promise<boolean> {
       .from('settings')
       .update({
         blog_title: settings.blogTitle,
-        nickname: settings.nickname,
       })
       .eq('id', existing.id);
 
@@ -155,7 +160,6 @@ export async function updateSettings(settings: BlogSettings): Promise<boolean> {
       .from('settings')
       .insert({
         blog_title: settings.blogTitle,
-        nickname: settings.nickname,
       });
 
     if (error) {
