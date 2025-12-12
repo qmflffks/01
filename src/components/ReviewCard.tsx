@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import type { Review, Comment } from '../types';
-import { generateId, processImage } from '../utils/imageProcessor';
-import { uploadImage } from '../utils/storage';
+import { generateId } from '../utils/imageProcessor';
+import { CommentImageUploader } from './CommentImageUploader';
 
 interface ReviewCardProps {
   review: Review;
@@ -24,8 +24,7 @@ export function ReviewCard({
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [commentImage, setCommentImage] = useState<string | null>(null);
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showImageUploader, setShowImageUploader] = useState(false);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % review.imageUrls.length);
@@ -54,39 +53,9 @@ export function ReviewCard({
     setShowCommentInput(false);
   };
 
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
-      return;
-    }
-
-    setIsProcessingImage(true);
-    try {
-      // 노이즈 + 워터마크 처리 (댓글용 - 작게)
-      const processedDataUrl = await processImage(file, {
-        noiseIntensity: 10,
-        watermarkText: userNickname || '익명',
-        watermarkPosition: 'bottom-right',
-        watermarkOpacity: 0.5,
-      });
-
-      // Supabase Storage에 업로드
-      const storageUrl = await uploadImage(processedDataUrl, 'comment');
-      if (storageUrl) {
-        setCommentImage(storageUrl);
-      }
-    } catch (error) {
-      console.error('Image processing failed:', error);
-      alert('이미지 처리에 실패했습니다.');
-    } finally {
-      setIsProcessingImage(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+  const handleImageProcessed = (storageUrl: string) => {
+    setCommentImage(storageUrl);
+    setShowImageUploader(false);
   };
 
   const removeCommentImage = () => {
@@ -265,40 +234,32 @@ export function ReviewCard({
                 />
 
                 {/* 이미지 첨부 */}
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    className="hidden"
-                  />
+                {!showImageUploader && !commentImage && (
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isProcessingImage || !!commentImage}
-                    className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    onClick={() => setShowImageUploader(true)}
+                    className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
-                    {isProcessingImage ? '처리 중...' : commentImage ? '✓ 이미지 첨부됨' : '📎 이미지 첨부'}
+                    📎 이미지 첨부
                   </button>
-                  {commentImage && !isProcessingImage && (
+                )}
+
+                {/* 이미지 미리보기 */}
+                {commentImage && (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={commentImage}
+                        alt="첨부 이미지"
+                        className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
                     <button
                       onClick={removeCommentImage}
                       className="px-3 py-2 text-sm text-red-500 hover:text-red-600"
                     >
-                      ✕ 제거
+                      ✕ 이미지 제거
                     </button>
-                  )}
-                </div>
-
-                {/* 이미지 미리보기 */}
-                {commentImage && (
-                  <div className="relative">
-                    <img
-                      src={commentImage}
-                      alt="첨부 이미지"
-                      className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600"
-                      style={{ maxHeight: '200px' }}
-                    />
                   </div>
                 )}
 
@@ -315,6 +276,7 @@ export function ReviewCard({
                       setShowCommentInput(false);
                       setNewComment('');
                       setCommentImage(null);
+                      setShowImageUploader(false);
                     }}
                     className="btn-secondary py-2.5 sm:py-2"
                   >
@@ -336,6 +298,15 @@ export function ReviewCard({
           </>
         )}
       </div>
+
+      {/* 이미지 업로더 모달 */}
+      {showImageUploader && (
+        <CommentImageUploader
+          userNickname={userNickname || '익명'}
+          onImageProcessed={handleImageProcessed}
+          onCancel={() => setShowImageUploader(false)}
+        />
+      )}
     </article>
   );
 }
