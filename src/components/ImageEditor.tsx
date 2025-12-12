@@ -7,7 +7,7 @@ interface ImageEditorProps {
   onCancel: () => void;
 }
 
-type ResizeHandle = 'tl' | 'tr' | 'bl' | 'br' | 'move' | null;
+type ResizeHandle = 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r' | 'move' | null;
 
 export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
@@ -80,47 +80,55 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
     const dy = coords.y - dragStart.y;
 
     let newCrop = { ...dragStart.cropArea };
+    const minSize = 50;
 
     if (activeHandle === 'move') {
-      // 이동 (정사각형 유지)
+      // 이동
       newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, imageSize.width - dragStart.cropArea.width));
       newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, imageSize.height - dragStart.cropArea.height));
     } else {
-      // 크기 조절 (정사각형 유지)
-      const minSize = 100;
-      let newSize = dragStart.cropArea.width;
-
+      // 자유로운 크기 조절
       switch (activeHandle) {
-        case 'tl': // 좌상단 - 왼쪽 위로 확장/축소
-          newSize = Math.max(minSize, dragStart.cropArea.width - Math.max(dx, dy));
-          newSize = Math.min(newSize, Math.min(dragStart.cropArea.x + dragStart.cropArea.width, dragStart.cropArea.y + dragStart.cropArea.height));
-          newCrop.x = dragStart.cropArea.x + dragStart.cropArea.width - newSize;
-          newCrop.y = dragStart.cropArea.y + dragStart.cropArea.height - newSize;
-          newCrop.width = newSize;
-          newCrop.height = newSize;
+        case 'tl': // 좌상단
+          newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, dragStart.cropArea.x + dragStart.cropArea.width - minSize));
+          newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, dragStart.cropArea.y + dragStart.cropArea.height - minSize));
+          newCrop.width = dragStart.cropArea.width - (newCrop.x - dragStart.cropArea.x);
+          newCrop.height = dragStart.cropArea.height - (newCrop.y - dragStart.cropArea.y);
           break;
 
-        case 'tr': // 우상단 - 오른쪽 위로 확장/축소
-          newSize = Math.max(minSize, dragStart.cropArea.width + Math.max(dx, -dy));
-          newSize = Math.min(newSize, Math.min(imageSize.width - dragStart.cropArea.x, dragStart.cropArea.y + dragStart.cropArea.height));
-          newCrop.y = dragStart.cropArea.y + dragStart.cropArea.height - newSize;
-          newCrop.width = newSize;
-          newCrop.height = newSize;
+        case 'tr': // 우상단
+          newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, dragStart.cropArea.y + dragStart.cropArea.height - minSize));
+          newCrop.width = Math.max(minSize, Math.min(dragStart.cropArea.width + dx, imageSize.width - dragStart.cropArea.x));
+          newCrop.height = dragStart.cropArea.height - (newCrop.y - dragStart.cropArea.y);
           break;
 
-        case 'bl': // 좌하단 - 왼쪽 아래로 확장/축소
-          newSize = Math.max(minSize, dragStart.cropArea.width + Math.max(-dx, dy));
-          newSize = Math.min(newSize, Math.min(dragStart.cropArea.x + dragStart.cropArea.width, imageSize.height - dragStart.cropArea.y));
-          newCrop.x = dragStart.cropArea.x + dragStart.cropArea.width - newSize;
-          newCrop.width = newSize;
-          newCrop.height = newSize;
+        case 'bl': // 좌하단
+          newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, dragStart.cropArea.x + dragStart.cropArea.width - minSize));
+          newCrop.width = dragStart.cropArea.width - (newCrop.x - dragStart.cropArea.x);
+          newCrop.height = Math.max(minSize, Math.min(dragStart.cropArea.height + dy, imageSize.height - dragStart.cropArea.y));
           break;
 
-        case 'br': // 우하단 - 오른쪽 아래로 확장/축소
-          newSize = Math.max(minSize, dragStart.cropArea.width + Math.min(dx, dy));
-          newSize = Math.min(newSize, Math.min(imageSize.width - dragStart.cropArea.x, imageSize.height - dragStart.cropArea.y));
-          newCrop.width = newSize;
-          newCrop.height = newSize;
+        case 'br': // 우하단
+          newCrop.width = Math.max(minSize, Math.min(dragStart.cropArea.width + dx, imageSize.width - dragStart.cropArea.x));
+          newCrop.height = Math.max(minSize, Math.min(dragStart.cropArea.height + dy, imageSize.height - dragStart.cropArea.y));
+          break;
+
+        case 't': // 상단
+          newCrop.y = Math.max(0, Math.min(dragStart.cropArea.y + dy, dragStart.cropArea.y + dragStart.cropArea.height - minSize));
+          newCrop.height = dragStart.cropArea.height - (newCrop.y - dragStart.cropArea.y);
+          break;
+
+        case 'b': // 하단
+          newCrop.height = Math.max(minSize, Math.min(dragStart.cropArea.height + dy, imageSize.height - dragStart.cropArea.y));
+          break;
+
+        case 'l': // 좌측
+          newCrop.x = Math.max(0, Math.min(dragStart.cropArea.x + dx, dragStart.cropArea.x + dragStart.cropArea.width - minSize));
+          newCrop.width = dragStart.cropArea.width - (newCrop.x - dragStart.cropArea.x);
+          break;
+
+        case 'r': // 우측
+          newCrop.width = Math.max(minSize, Math.min(dragStart.cropArea.width + dx, imageSize.width - dragStart.cropArea.x));
           break;
       }
     }
@@ -179,6 +187,8 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
 
   // 모서리 핸들: 큰 원형, 흰색 배경, 파란 테두리
   const cornerHandleStyle = "w-12 h-12 bg-white border-4 border-blue-500 rounded-full shadow-xl cursor-move z-30";
+  // 변 핸들: 작은 직사각형, 파란색 배경
+  const edgeHandleStyle = "bg-blue-500/80 shadow-lg z-30";
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
@@ -188,7 +198,7 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
             이미지 자르기
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            모서리를 드래그하여 크기 조절 • 안쪽을 드래그하여 위치 이동
+            모서리/변을 드래그하여 자유롭게 크기 조절 • 안쪽을 드래그하여 위치 이동
           </p>
         </div>
 
@@ -232,7 +242,7 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
                   ))}
                 </div>
 
-                {/* 4개 모서리 핸들만 */}
+                {/* 4개 모서리 핸들 */}
                 <div
                   className={`absolute -left-6 -top-6 ${cornerHandleStyle}`}
                   onMouseDown={(e) => handleStart(e, 'tl')}
@@ -256,6 +266,32 @@ export function ImageEditor({ imageUrl, onCrop, onCancel }: ImageEditorProps) {
                   onMouseDown={(e) => handleStart(e, 'br')}
                   onTouchStart={(e) => handleStart(e, 'br')}
                   title="우하단"
+                />
+
+                {/* 4개 변 핸들 */}
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 -top-2 w-16 h-4 ${edgeHandleStyle} rounded cursor-ns-resize`}
+                  onMouseDown={(e) => handleStart(e, 't')}
+                  onTouchStart={(e) => handleStart(e, 't')}
+                  title="상단"
+                />
+                <div
+                  className={`absolute left-1/2 -translate-x-1/2 -bottom-2 w-16 h-4 ${edgeHandleStyle} rounded cursor-ns-resize`}
+                  onMouseDown={(e) => handleStart(e, 'b')}
+                  onTouchStart={(e) => handleStart(e, 'b')}
+                  title="하단"
+                />
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 -left-2 w-4 h-16 ${edgeHandleStyle} rounded cursor-ew-resize`}
+                  onMouseDown={(e) => handleStart(e, 'l')}
+                  onTouchStart={(e) => handleStart(e, 'l')}
+                  title="좌측"
+                />
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 -right-2 w-4 h-16 ${edgeHandleStyle} rounded cursor-ew-resize`}
+                  onMouseDown={(e) => handleStart(e, 'r')}
+                  onTouchStart={(e) => handleStart(e, 'r')}
+                  title="우측"
                 />
               </div>
             )}
