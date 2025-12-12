@@ -18,9 +18,9 @@ USING (bucket_id = 'images');
 -- 4. 버킷 정책: 자기가 업로드한 이미지만 삭제 가능 (추후 확장용)
 CREATE POLICY "Users can delete their own images"
 ON storage.objects FOR DELETE
-USING (bucket_id = 'images' AND auth.uid()::text = owner);
+USING (bucket_id = 'images' AND auth.uid() = owner);
 
 -- 5. 버킷 정책: 자기가 업로드한 이미지만 업데이트 가능 (추후 확장용)
 CREATE POLICY "Users can update their own images"
 ON storage.objects FOR UPDATE
-USING (bucket_id = 'images' AND auth.uid()::text = owner);
+USING (bucket_id = 'images' AND auth.uid() = owner);
