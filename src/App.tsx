@@ -23,6 +23,8 @@ function AppContent() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [showNewReviewForm, setShowNewReviewForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [prefillWebtoonTitle, setPrefillWebtoonTitle] = useState<string | undefined>();
+  const [prefillEpisode, setPrefillEpisode] = useState<string | undefined>();
 
   // base path 제거한 실제 경로 계산
   const getRelativePath = (pathname: string) => {
@@ -101,16 +103,6 @@ function AppContent() {
     loadReviews();
   }, [loadReviews]);
 
-  const handleAddReview = async (review: Review) => {
-    const success = await addReview(review);
-    if (success) {
-      await loadReviews(); // 새로고침
-      setShowNewReviewForm(false);
-    } else {
-      alert('리뷰 등록에 실패했습니다.');
-    }
-  };
-
   const handleDeleteReview = async (reviewId: string) => {
     if (confirm('이 리뷰를 삭제하시겠습니까?')) {
       const success = await deleteReview(reviewId);
@@ -158,6 +150,32 @@ function AppContent() {
     }
   };
 
+  const handleContinueReview = (webtoonTitle: string, nextEpisode?: string) => {
+    setPrefillWebtoonTitle(webtoonTitle);
+    setPrefillEpisode(nextEpisode);
+    setShowNewReviewForm(true);
+    // 페이지 맨 위로 스크롤
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelNewReview = () => {
+    setShowNewReviewForm(false);
+    setPrefillWebtoonTitle(undefined);
+    setPrefillEpisode(undefined);
+  };
+
+  const handleSubmitNewReview = async (review: Review) => {
+    const success = await addReview(review);
+    if (success) {
+      await loadReviews();
+      setShowNewReviewForm(false);
+      setPrefillWebtoonTitle(undefined);
+      setPrefillEpisode(undefined);
+    } else {
+      alert('리뷰 등록에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -180,8 +198,10 @@ function AppContent() {
             {showNewReviewForm ? (
               <div className="mb-6">
                 <NewReviewForm
-                  onSubmit={handleAddReview}
-                  onCancel={() => setShowNewReviewForm(false)}
+                  onSubmit={handleSubmitNewReview}
+                  onCancel={handleCancelNewReview}
+                  prefillWebtoonTitle={prefillWebtoonTitle}
+                  prefillEpisode={prefillEpisode}
                 />
               </div>
             ) : (
@@ -211,6 +231,7 @@ function AppContent() {
                 onDeleteComment={handleDeleteComment}
                 onUpdateReview={handleUpdateReview}
                 onUpdateComment={handleUpdateComment}
+                onContinueReview={handleContinueReview}
               />
             ))}
           </div>

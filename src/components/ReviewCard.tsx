@@ -12,6 +12,7 @@ interface ReviewCardProps {
   onDeleteComment: (reviewId: string, commentId: string) => void;
   onUpdateReview: (reviewId: string, webtoonTitle: string, episode?: string) => void;
   onUpdateComment: (reviewId: string, commentId: string, text: string) => void;
+  onContinueReview: (webtoonTitle: string, nextEpisode?: string) => void;
 }
 
 export function ReviewCard({
@@ -22,6 +23,7 @@ export function ReviewCard({
   onDeleteComment,
   onUpdateReview,
   onUpdateComment,
+  onContinueReview,
 }: ReviewCardProps) {
   const { userNickname, user } = useAdmin();
   const [newComment, setNewComment] = useState('');
@@ -96,6 +98,18 @@ export function ReviewCard({
 
   const removeCommentImage = () => {
     setCommentImage(null);
+  };
+
+  const handleContinueReview = () => {
+    // 에피소드 번호를 추출하고 +1
+    let nextEpisode: string | undefined;
+    if (review.episode) {
+      const episodeNum = parseInt(review.episode);
+      if (!isNaN(episodeNum)) {
+        nextEpisode = String(episodeNum + 1);
+      }
+    }
+    onContinueReview(review.webtoonTitle, nextEpisode);
   };
 
   const formatDate = (date: Date) => {
@@ -423,6 +437,22 @@ export function ReviewCard({
           </>
         )}
       </div>
+
+      {/* 이어서 작성 버튼 */}
+      {isAdmin && (
+        <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={handleContinueReview}
+            className="w-full mt-3 py-2.5 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-sm font-medium transition-colors rounded-lg border border-primary-200 dark:border-primary-800 flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            이어서 작성하기
+            {review.episode && <span className="text-gray-400">({review.webtoonTitle} EP.{parseInt(review.episode) + 1})</span>}
+          </button>
+        </div>
+      )}
 
       {/* 이미지 업로더 모달 */}
       {showImageUploader && (
