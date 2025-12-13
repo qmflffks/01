@@ -12,7 +12,7 @@ interface ReviewCardProps {
   onDeleteComment: (reviewId: string, commentId: string) => void;
   onUpdateReview: (reviewId: string, webtoonTitle: string, episode?: string) => void;
   onUpdateComment: (reviewId: string, commentId: string, text: string) => void;
-  onContinueReview: (webtoonTitle: string, nextEpisode?: string) => void;
+  onContinueReview: (reviewId: string, webtoonTitle: string, nextEpisode?: string) => void;
 }
 
 export function ReviewCard({
@@ -109,7 +109,7 @@ export function ReviewCard({
         nextEpisode = String(episodeNum + 1);
       }
     }
-    onContinueReview(review.webtoonTitle, nextEpisode);
+    onContinueReview(review.id, review.webtoonTitle, nextEpisode);
   };
 
   const formatDate = (date: Date) => {

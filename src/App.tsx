@@ -25,6 +25,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [prefillWebtoonTitle, setPrefillWebtoonTitle] = useState<string | undefined>();
   const [prefillEpisode, setPrefillEpisode] = useState<string | undefined>();
+  const [parentReviewId, setParentReviewId] = useState<string | undefined>();
 
   // base path 제거한 실제 경로 계산
   const getRelativePath = (pathname: string) => {
@@ -99,6 +100,44 @@ function AppContent() {
     setLoading(false);
   }, []);
 
+  // 리뷰를 스레드별로 그룹화하는 함수
+  const groupReviewsByThread = (reviews: Review[]): Review[][] => {
+    const threads: Review[][] = [];
+    const processedIds = new Set<string>();
+
+    reviews.forEach((review) => {
+      // 이미 처리된 리뷰는 건너뛰기
+      if (processedIds.has(review.id)) return;
+
+      // 부모 리뷰가 아닌 경우 건너뛰기 (나중에 부모와 함께 처리됨)
+      if (review.parentReviewId) return;
+
+      // 스레드 시작 (부모 리뷰)
+      const thread: Review[] = [review];
+      processedIds.add(review.id);
+
+      // 이 리뷰를 부모로 하는 자식 리뷰들 찾기
+      const children = reviews.filter((r) => r.parentReviewId === review.id);
+      children.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+      children.forEach((child) => {
+        thread.push(child);
+        processedIds.add(child.id);
+      });
+
+      threads.push(thread);
+    });
+
+    // 스레드를 최신 활동 기준으로 정렬 (스레드의 마지막 리뷰 시간)
+    threads.sort((a, b) => {
+      const lastA = a[a.length - 1].createdAt.getTime();
+      const lastB = b[b.length - 1].createdAt.getTime();
+      return lastB - lastA;
+    });
+
+    return threads;
+  };
+
   useEffect(() => {
     loadReviews();
   }, [loadReviews]);
@@ -150,7 +189,8 @@ function AppContent() {
     }
   };
 
-  const handleContinueReview = (webtoonTitle: string, nextEpisode?: string) => {
+  const handleContinueReview = (reviewId: string, webtoonTitle: string, nextEpisode?: string) => {
+    setParentReviewId(reviewId);
     setPrefillWebtoonTitle(webtoonTitle);
     setPrefillEpisode(nextEpisode);
     setShowNewReviewForm(true);
@@ -162,15 +202,19 @@ function AppContent() {
     setShowNewReviewForm(false);
     setPrefillWebtoonTitle(undefined);
     setPrefillEpisode(undefined);
+    setParentReviewId(undefined);
   };
 
   const handleSubmitNewReview = async (review: Review) => {
-    const success = await addReview(review);
+    // parentReviewId를 리뷰에 추가
+    const reviewWithParent = { ...review, parentReviewId };
+    const success = await addReview(reviewWithParent);
     if (success) {
       await loadReviews();
       setShowNewReviewForm(false);
       setPrefillWebtoonTitle(undefined);
       setPrefillEpisode(undefined);
+      setParentReviewId(undefined);
     } else {
       alert('리뷰 등록에 실패했습니다.');
     }
@@ -221,18 +265,26 @@ function AppContent() {
         {/* 리뷰 목록 */}
         {reviews.length > 0 ? (
           <div className="space-y-6">
-            {reviews.map((review) => (
-              <ReviewCard
-                key={review.id}
-                review={review}
-                isAdmin={isAdmin}
-                onAddComment={handleAddComment}
-                onDeleteReview={handleDeleteReview}
-                onDeleteComment={handleDeleteComment}
-                onUpdateReview={handleUpdateReview}
-                onUpdateComment={handleUpdateComment}
-                onContinueReview={handleContinueReview}
-              />
+            {groupReviewsByThread(reviews).map((thread) => (
+              <div key={thread[0].id} className="space-y-3">
+                {thread.map((review, index) => (
+                  <div
+                    key={review.id}
+                    className={index > 0 ? 'ml-4 border-l-2 border-primary-300 dark:border-primary-700 pl-4' : ''}
+                  >
+                    <ReviewCard
+                      review={review}
+                      isAdmin={isAdmin}
+                      onAddComment={handleAddComment}
+                      onDeleteReview={handleDeleteReview}
+                      onDeleteComment={handleDeleteComment}
+                      onUpdateReview={handleUpdateReview}
+                      onUpdateComment={handleUpdateComment}
+                      onContinueReview={handleContinueReview}
+                    />
+                  </div>
+                ))}
+              </div>
             ))}
           </div>
         ) : (
