@@ -80,6 +80,7 @@ export async function fetchReviews(): Promise<Review[]> {
         authorNickname: review.author_nickname || '익명',
         authorEmail: review.author_email || '',
         createdAt: new Date(review.created_at),
+        parentReviewId: review.parent_review_id || undefined,
         comments: (comments || []).map((c) => ({
           id: c.id,
           text: c.text,
@@ -107,6 +108,7 @@ export async function addReview(review: Review): Promise<boolean> {
     author_nickname: review.authorNickname,
     author_email: review.authorEmail,
     created_at: review.createdAt.toISOString(),
+    parent_review_id: review.parentReviewId || null, // 스레드 기능
   });
 
   if (error) {

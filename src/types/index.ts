@@ -7,6 +7,7 @@ export interface Review {
   authorEmail: string;
   comments: Comment[];
   createdAt: Date;
+  parentReviewId?: string; // 스레드 기능: 부모 리뷰 ID
 }
 
 export interface Comment {
