@@ -7,12 +7,14 @@ import { generateId } from '../utils/imageProcessor';
 interface NewReviewFormProps {
   onSubmit: (review: Review) => void;
   onCancel: () => void;
+  prefillWebtoonTitle?: string;
+  prefillEpisode?: string;
 }
 
-export function NewReviewForm({ onSubmit, onCancel }: NewReviewFormProps) {
+export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefillEpisode }: NewReviewFormProps) {
   const { userNickname, user } = useAdmin();
-  const [webtoonTitle, setWebtoonTitle] = useState('');
-  const [episode, setEpisode] = useState('');
+  const [webtoonTitle, setWebtoonTitle] = useState(prefillWebtoonTitle || '');
+  const [episode, setEpisode] = useState(prefillEpisode || '');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [firstComment, setFirstComment] = useState('');
 
