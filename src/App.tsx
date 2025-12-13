@@ -12,6 +12,8 @@ import {
   deleteReview,
   addComment,
   deleteComment,
+  updateReview,
+  updateComment,
 } from './utils/storage';
 
 function AppContent() {
@@ -138,6 +140,24 @@ function AppContent() {
     }
   };
 
+  const handleUpdateReview = async (reviewId: string, webtoonTitle: string, episode?: string) => {
+    const success = await updateReview(reviewId, webtoonTitle, episode);
+    if (success) {
+      await loadReviews();
+    } else {
+      alert('리뷰 수정에 실패했습니다.');
+    }
+  };
+
+  const handleUpdateComment = async (_reviewId: string, commentId: string, text: string) => {
+    const success = await updateComment(commentId, text);
+    if (success) {
+      await loadReviews();
+    } else {
+      alert('댓글 수정에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -189,6 +209,8 @@ function AppContent() {
                 onAddComment={handleAddComment}
                 onDeleteReview={handleDeleteReview}
                 onDeleteComment={handleDeleteComment}
+                onUpdateReview={handleUpdateReview}
+                onUpdateComment={handleUpdateComment}
               />
             ))}
           </div>

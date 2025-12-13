@@ -10,6 +10,8 @@ interface ReviewCardProps {
   onAddComment: (reviewId: string, comment: Comment) => void;
   onDeleteReview: (reviewId: string) => void;
   onDeleteComment: (reviewId: string, commentId: string) => void;
+  onUpdateReview: (reviewId: string, webtoonTitle: string, episode?: string) => void;
+  onUpdateComment: (reviewId: string, commentId: string, text: string) => void;
 }
 
 export function ReviewCard({
@@ -18,6 +20,8 @@ export function ReviewCard({
   onAddComment,
   onDeleteReview,
   onDeleteComment,
+  onUpdateReview,
+  onUpdateComment,
 }: ReviewCardProps) {
   const { userNickname, user } = useAdmin();
   const [newComment, setNewComment] = useState('');
@@ -33,6 +37,15 @@ export function ReviewCard({
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + review.imageUrls.length) % review.imageUrls.length);
   };
+
+  // 리뷰 수정 상태
+  const [isEditingReview, setIsEditingReview] = useState(false);
+  const [editWebtoonTitle, setEditWebtoonTitle] = useState(review.webtoonTitle);
+  const [editEpisode, setEditEpisode] = useState(review.episode || '');
+
+  // 댓글 수정 상태
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
 
   const handleAddComment = () => {
     if (!newComment.trim() && !commentImage) return;
@@ -51,6 +64,29 @@ export function ReviewCard({
     setNewComment('');
     setCommentImage(null);
     setShowCommentInput(false);
+  };
+
+  const handleUpdateReview = () => {
+    if (!editWebtoonTitle.trim()) return;
+    onUpdateReview(review.id, editWebtoonTitle.trim(), editEpisode.trim() || undefined);
+    setIsEditingReview(false);
+  };
+
+  const handleStartEditComment = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditCommentText(comment.text);
+  };
+
+  const handleUpdateComment = (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    onUpdateComment(review.id, commentId, editCommentText.trim());
+    setEditingCommentId(null);
+    setEditCommentText('');
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditCommentText('');
   };
 
   const handleImageProcessed = (storageUrl: string) => {
@@ -93,24 +129,73 @@ export function ReviewCard({
           </div>
         </div>
         {isAdmin && (
-          <button
-            onClick={() => onDeleteReview(review.id)}
-            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-            title="삭제"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setIsEditingReview(!isEditingReview)}
+              className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
+              title="수정"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => onDeleteReview(review.id)}
+              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+              title="삭제"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         )}
       </div>
 
       {/* 웹툰 정보 */}
       <div className="px-4 pb-2">
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-sm font-medium rounded-full">
-          📚 {review.webtoonTitle}
-          {review.episode && <span className="text-primary-500">EP.{review.episode}</span>}
-        </span>
+        {isEditingReview ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={editWebtoonTitle}
+              onChange={(e) => setEditWebtoonTitle(e.target.value)}
+              placeholder="웹툰 제목"
+              className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+            />
+            <input
+              type="text"
+              value={editEpisode}
+              onChange={(e) => setEditEpisode(e.target.value)}
+              placeholder="에피소드 (선택)"
+              className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleUpdateReview}
+                disabled={!editWebtoonTitle.trim()}
+                className="flex-1 btn-primary py-2 disabled:opacity-50"
+              >
+                저장
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditingReview(false);
+                  setEditWebtoonTitle(review.webtoonTitle);
+                  setEditEpisode(review.episode || '');
+                }}
+                className="btn-secondary py-2"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-sm font-medium rounded-full">
+            📚 {review.webtoonTitle}
+            {review.episode && <span className="text-primary-500">EP.{review.episode}</span>}
+          </span>
+        )}
       </div>
 
       {/* 이미지 캐러셀 */}
@@ -186,32 +271,72 @@ export function ReviewCard({
                   <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
                     @{comment.authorNickname}
                   </p>
-                  {comment.text && (
-                    <p className="text-gray-800 dark:text-gray-200 break-words mb-2">
-                      {comment.text}
-                    </p>
+                  {editingCommentId === comment.id ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleUpdateComment(comment.id)}
+                          disabled={!editCommentText.trim()}
+                          className="flex-1 btn-primary py-1.5 text-sm disabled:opacity-50"
+                        >
+                          저장
+                        </button>
+                        <button
+                          onClick={handleCancelEditComment}
+                          className="btn-secondary py-1.5 text-sm"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {comment.text && (
+                        <p className="text-gray-800 dark:text-gray-200 break-words mb-2">
+                          {comment.text}
+                        </p>
+                      )}
+                      {comment.imageUrl && (
+                        <img
+                          src={comment.imageUrl}
+                          alt="댓글 이미지"
+                          className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
+                          style={{ maxHeight: '300px' }}
+                        />
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatDate(comment.createdAt)}
+                      </p>
+                    </>
                   )}
-                  {comment.imageUrl && (
-                    <img
-                      src={comment.imageUrl}
-                      alt="댓글 이미지"
-                      className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
-                      style={{ maxHeight: '300px' }}
-                    />
-                  )}
-                  <p className="text-xs text-gray-400 mt-1">
-                    {formatDate(comment.createdAt)}
-                  </p>
                 </div>
-                {isAdmin && (
-                  <button
-                    onClick={() => onDeleteComment(review.id, comment.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                {isAdmin && editingCommentId !== comment.id && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleStartEditComment(comment)}
+                      className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                      title="수정"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => onDeleteComment(review.id, comment.id)}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      title="삭제"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

@@ -135,6 +135,24 @@ export async function deleteReview(reviewId: string): Promise<boolean> {
   return true;
 }
 
+// 리뷰 수정
+export async function updateReview(reviewId: string, webtoonTitle: string, episode?: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('reviews')
+    .update({
+      webtoon_title: webtoonTitle,
+      episode: episode || null,
+    })
+    .eq('id', reviewId);
+
+  if (error) {
+    console.error('Failed to update review:', error);
+    return false;
+  }
+
+  return true;
+}
+
 // 댓글 추가
 export async function addComment(reviewId: string, comment: Comment): Promise<boolean> {
   const { error } = await supabase.from('comments').insert({
@@ -161,6 +179,21 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 
   if (error) {
     console.error('Failed to delete comment:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// 댓글 수정
+export async function updateComment(commentId: string, text: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('comments')
+    .update({ text })
+    .eq('id', commentId);
+
+  if (error) {
+    console.error('Failed to update comment:', error);
     return false;
   }
 
