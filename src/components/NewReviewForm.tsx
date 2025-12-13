@@ -19,8 +19,8 @@ export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefill
   const [firstComment, setFirstComment] = useState('');
 
   const handleSubmit = () => {
-    if (!webtoonTitle.trim() || imageUrls.length === 0) {
-      alert('웹툰 제목과 이미지는 필수입니다.');
+    if (!webtoonTitle.trim()) {
+      alert('웹툰 제목은 필수입니다.');
       return;
     }
 
@@ -49,7 +49,7 @@ export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefill
     onSubmit(review);
   };
 
-  const isValid = webtoonTitle.trim() && imageUrls.length > 0;
+  const isValid = webtoonTitle.trim();
 
   return (
     <div className="card p-4 space-y-4">
