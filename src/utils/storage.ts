@@ -99,11 +99,13 @@ export async function fetchReviews(): Promise<Review[]> {
 
 // 리뷰 추가
 export async function addReview(review: Review): Promise<boolean> {
+  console.log('Adding review with imageUrls:', review.imageUrls);
+
   const { error } = await supabase.from('reviews').insert({
     id: review.id,
     webtoon_title: review.webtoonTitle,
     episode: review.episode || null,
-    image_urls: JSON.stringify(review.imageUrls), // JSON 배열로 저장
+    image_urls: review.imageUrls.length > 0 ? JSON.stringify(review.imageUrls) : null, // 빈 배열이면 null
     image_url: review.imageUrls[0] || null, // 첫 번째 이미지 (하위 호환성)
     author_nickname: review.authorNickname,
     author_email: review.authorEmail,
@@ -113,6 +115,7 @@ export async function addReview(review: Review): Promise<boolean> {
 
   if (error) {
     console.error('Failed to add review:', error);
+    alert(`리뷰 등록 실패: ${error.message}`);
     return false;
   }
 

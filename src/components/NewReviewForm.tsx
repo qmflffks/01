@@ -98,9 +98,12 @@ export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefill
       {/* 이미지 업로더 */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          웹툰 캡쳐 *
+          웹툰 캡쳐 (선택)
         </label>
         <ImageUploader onImagesProcessed={setImageUrls} />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          이미지 없이 텍스트만으로도 리뷰를 작성할 수 있습니다.
+        </p>
       </div>
 
       {/* 첫 번째 코멘트 */}
