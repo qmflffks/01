@@ -12,7 +12,7 @@ export function Settings() {
 
   // 설정값 로드 완료 시 초기화
   useEffect(() => {
-    if (!settingsLoading) {
+    if (!settingsLoading && blogTitle) {
       setNewBlogTitle(blogTitle);
     }
   }, [blogTitle, settingsLoading]);
@@ -43,7 +43,8 @@ export function Settings() {
     setTimeout(() => setMessage(''), 3000);
   };
 
-  if (settingsLoading) {
+  // blogTitle이 로드될 때까지 로딩 표시
+  if (settingsLoading || !newBlogTitle) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -154,7 +155,7 @@ export function Settings() {
         {/* 뒤로가기 */}
         <div>
           <a
-            href="/"
+            href="./"
             className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400
               transition-colors text-sm font-medium"
           >
