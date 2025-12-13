@@ -1,6 +1,45 @@
 import { supabase } from '../lib/supabase';
 import type { Review, Comment, BlogSettings } from '../types';
 
+// Supabase Storage에 이미지 업로드
+export async function uploadImage(dataUrl: string, fileName: string): Promise<string | null> {
+  try {
+    // data URL을 Blob으로 변환
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    // 파일명 생성 (충돌 방지를 위해 타임스탬프 추가)
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 9);
+    const fileExtension = 'jpg'; // JPEG로 통일
+    const storagePath = `${timestamp}-${randomString}-${fileName}.${fileExtension}`;
+
+    // Supabase Storage에 업로드
+    const { data, error } = await supabase.storage
+      .from('images') // 'images' 버킷 사용 (미리 생성되어 있어야 함)
+      .upload(storagePath, blob, {
+        contentType: 'image/jpeg',
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) {
+      console.error('Failed to upload image to storage:', error);
+      return null;
+    }
+
+    // Public URL 생성
+    const { data: urlData } = supabase.storage
+      .from('images')
+      .getPublicUrl(data.path);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Failed to process image for upload:', error);
+    return null;
+  }
+}
+
 // Supabase에서 리뷰 + 댓글 불러오기
 export async function fetchReviews(): Promise<Review[]> {
   const { data: reviews, error } = await supabase
@@ -22,17 +61,29 @@ export async function fetchReviews(): Promise<Review[]> {
         .eq('review_id', review.id)
         .order('created_at', { ascending: true });
 
+      // image_urls가 JSON 배열이면 파싱, 문자열이면 단일 이미지로 처리 (하위 호환성)
+      let imageUrls: string[] = [];
+      if (review.image_urls) {
+        imageUrls = typeof review.image_urls === 'string'
+          ? JSON.parse(review.image_urls)
+          : review.image_urls;
+      } else if (review.image_url) {
+        // 기존 단일 이미지 필드 지원 (하위 호환성)
+        imageUrls = [review.image_url];
+      }
+
       return {
         id: review.id,
         webtoonTitle: review.webtoon_title,
         episode: review.episode,
-        imageUrl: review.image_url,
+        imageUrls,
         authorNickname: review.author_nickname || '익명',
         authorEmail: review.author_email || '',
         createdAt: new Date(review.created_at),
         comments: (comments || []).map((c) => ({
           id: c.id,
           text: c.text,
+          imageUrl: c.image_url,
           authorNickname: c.author_nickname || '익명',
           authorEmail: c.author_email || '',
           createdAt: new Date(c.created_at),
@@ -51,7 +102,8 @@ export async function addReview(review: Review): Promise<boolean> {
     id: review.id,
     webtoon_title: review.webtoonTitle,
     episode: review.episode || null,
-    image_url: review.imageUrl,
+    image_urls: JSON.stringify(review.imageUrls), // JSON 배열로 저장
+    image_url: review.imageUrls[0] || null, // 첫 번째 이미지 (하위 호환성)
     author_nickname: review.authorNickname,
     author_email: review.authorEmail,
     created_at: review.createdAt.toISOString(),
@@ -107,6 +159,7 @@ export async function addComment(reviewId: string, comment: Comment): Promise<bo
     id: comment.id,
     review_id: reviewId,
     text: comment.text,
+    image_url: comment.imageUrl || null,
     author_nickname: comment.authorNickname,
     author_email: comment.authorEmail,
     created_at: comment.createdAt.toISOString(),

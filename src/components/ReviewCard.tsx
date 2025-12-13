@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import type { Review, Comment } from '../types';
 import { generateId } from '../utils/imageProcessor';
+import { CommentImageUploader } from './CommentImageUploader';
 
 interface ReviewCardProps {
   review: Review;
@@ -25,6 +26,17 @@ export function ReviewCard({
   const { userNickname, user } = useAdmin();
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [commentImage, setCommentImage] = useState<string | null>(null);
+  const [showImageUploader, setShowImageUploader] = useState(false);
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % review.imageUrls.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + review.imageUrls.length) % review.imageUrls.length);
+  };
 
   // 리뷰 수정 상태
   const [isEditingReview, setIsEditingReview] = useState(false);
@@ -36,11 +48,12 @@ export function ReviewCard({
   const [editCommentText, setEditCommentText] = useState('');
 
   const handleAddComment = () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !commentImage) return;
 
     const comment: Comment = {
       id: generateId(),
       text: newComment.trim(),
+      imageUrl: commentImage || undefined,
       authorNickname: userNickname || '익명',
       authorEmail: user?.email || '',
       createdAt: new Date(),
@@ -49,6 +62,7 @@ export function ReviewCard({
 
     onAddComment(review.id, comment);
     setNewComment('');
+    setCommentImage(null);
     setShowCommentInput(false);
   };
 
@@ -73,6 +87,15 @@ export function ReviewCard({
   const handleCancelEditComment = () => {
     setEditingCommentId(null);
     setEditCommentText('');
+  };
+
+  const handleImageProcessed = (storageUrl: string) => {
+    setCommentImage(storageUrl);
+    setShowImageUploader(false);
+  };
+
+  const removeCommentImage = () => {
+    setCommentImage(null);
   };
 
   const formatDate = (date: Date) => {
@@ -175,13 +198,62 @@ export function ReviewCard({
         )}
       </div>
 
-      {/* 이미지 */}
-      <div className="relative">
+      {/* 이미지 캐러셀 */}
+      <div className="relative bg-black">
         <img
-          src={review.imageUrl}
-          alt={`${review.webtoonTitle} 캡쳐`}
-          className="w-full"
+          src={review.imageUrls[currentImageIndex]}
+          alt={`${review.webtoonTitle} 캡쳐 ${currentImageIndex + 1}`}
+          className="w-full object-contain"
+          style={{ maxHeight: '70vh' }}
         />
+
+        {/* 이미지가 여러 장일 때만 네비게이션 표시 */}
+        {review.imageUrls.length > 1 && (
+          <>
+            {/* 이전 버튼 */}
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+              aria-label="이전 이미지"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* 다음 버튼 */}
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors"
+              aria-label="다음 이미지"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* 인디케이터 */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+              {review.imageUrls.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentImageIndex
+                      ? 'bg-white w-6'
+                      : 'bg-white/50 hover:bg-white/75'
+                  }`}
+                  aria-label={`이미지 ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* 이미지 카운터 */}
+            <div className="absolute top-3 right-3 px-3 py-1 bg-black/70 text-white text-sm rounded-full">
+              {currentImageIndex + 1} / {review.imageUrls.length}
+            </div>
+          </>
+        )}
       </div>
 
       {/* 댓글 섹션 */}
@@ -225,9 +297,19 @@ export function ReviewCard({
                     </div>
                   ) : (
                     <>
-                      <p className="text-gray-800 dark:text-gray-200 break-words">
-                        {comment.text}
-                      </p>
+                      {comment.text && (
+                        <p className="text-gray-800 dark:text-gray-200 break-words mb-2">
+                          {comment.text}
+                        </p>
+                      )}
+                      {comment.imageUrl && (
+                        <img
+                          src={comment.imageUrl}
+                          alt="댓글 이미지"
+                          className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
+                          style={{ maxHeight: '300px' }}
+                        />
+                      )}
                       <p className="text-xs text-gray-400 mt-1">
                         {formatDate(comment.createdAt)}
                       </p>
@@ -270,15 +352,46 @@ export function ReviewCard({
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddComment()}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && !commentImage && handleAddComment()}
                   placeholder="리뷰 코멘트를 입력하세요..."
                   className="w-full px-3 py-3 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
                   autoFocus
                 />
+
+                {/* 이미지 첨부 */}
+                {!showImageUploader && !commentImage && (
+                  <button
+                    onClick={() => setShowImageUploader(true)}
+                    className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    📎 이미지 첨부
+                  </button>
+                )}
+
+                {/* 이미지 미리보기 */}
+                {commentImage && (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <img
+                        src={commentImage}
+                        alt="첨부 이미지"
+                        className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600"
+                        style={{ maxHeight: '200px' }}
+                      />
+                    </div>
+                    <button
+                      onClick={removeCommentImage}
+                      className="px-3 py-2 text-sm text-red-500 hover:text-red-600"
+                    >
+                      ✕ 이미지 제거
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
                     onClick={handleAddComment}
-                    disabled={!newComment.trim()}
+                    disabled={!newComment.trim() && !commentImage}
                     className="flex-1 btn-primary py-2.5 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     등록
@@ -287,6 +400,8 @@ export function ReviewCard({
                     onClick={() => {
                       setShowCommentInput(false);
                       setNewComment('');
+                      setCommentImage(null);
+                      setShowImageUploader(false);
                     }}
                     className="btn-secondary py-2.5 sm:py-2"
                   >
@@ -308,6 +423,15 @@ export function ReviewCard({
           </>
         )}
       </div>
+
+      {/* 이미지 업로더 모달 */}
+      {showImageUploader && (
+        <CommentImageUploader
+          userNickname={userNickname || '익명'}
+          onImageProcessed={handleImageProcessed}
+          onCancel={() => setShowImageUploader(false)}
+        />
+      )}
     </article>
   );
 }

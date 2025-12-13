@@ -1,15 +1,79 @@
-# React + TypeScript + Vite
+# 파이의 웹툰 리뷰 블로그
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite + Supabase로 만든 SNS 스타일의 웹툰 리뷰 블로그입니다.
 
-Currently, two official plugins are available:
+## 주요 기능
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📸 이미지 업로드 (자르기 선택 가능)
+- 🔒 자동 워터마크 + 노이즈 추가 (저작권 보호)
+- 💬 리뷰 작성 및 댓글 기능
+- ⚙️ 관리자 설정 페이지 (블로그 제목, 닉네임 변경)
+- 👤 다중 사용자 닉네임 관리 (Supabase users 테이블)
+- 📱 모바일 친화적 UI
+- 🌙 다크모드 지원
 
-## React Compiler
+## Supabase 설정
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. 환경변수 설정
+
+`.env` 파일을 생성하고 Supabase 정보를 입력하세요:
+
+```env
+VITE_SUPABASE_URL=your-supabase-url
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### 2. 데이터베이스 테이블 생성
+
+Supabase SQL Editor에서 다음 파일들을 실행하세요:
+
+1. **users 테이블**: `supabase_users_table.sql` 실행
+2. **reviews, comments, settings 테이블**: 기존 마이그레이션 파일 실행
+
+### 3. Storage 설정 (중요!)
+
+**이미지 업로드를 위해 반드시 필요합니다.**
+
+Supabase SQL Editor에서 `supabase_storage_setup.sql` 파일을 실행하세요.
+
+이 파일은 다음을 설정합니다:
+- `images` 버킷 생성 (public 버킷)
+- 모든 사용자가 이미지 업로드 가능
+- 모든 사용자가 이미지 읽기 가능
+
+또는 Supabase Dashboard에서 수동 설정:
+1. Storage → Create bucket
+2. Bucket name: `images`
+3. Public bucket: **체크 ✓**
+
+### 4. 관리자 설정
+
+`src/contexts/AdminContext.tsx` 파일에서 관리자 이메일을 변경하세요:
+
+```typescript
+const ADMIN_EMAIL = 'your-email@example.com'; // 여기를 수정
+```
+
+## 개발 환경 실행
+
+```bash
+npm install
+npm run dev
+```
+
+## 빌드
+
+```bash
+npm run build
+```
+
+## GitHub Pages 배포
+
+이 프로젝트는 GitHub Pages 배포를 위해 구성되어 있습니다.
+
+- Base path: `/01/`
+- SPA 라우팅 지원 (404.html 리다이렉트)
+- 자동 배포 워크플로우 포함
 
 ## Expanding the ESLint configuration
 
