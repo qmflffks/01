@@ -268,10 +268,15 @@ function AppContent() {
             {groupReviewsByThread(reviews).map((thread) => (
               <div key={thread[0].id} className="space-y-3">
                 {thread.map((review, index) => (
-                  <div
-                    key={review.id}
-                    className={index > 0 ? 'ml-4 border-l-2 border-primary-300 dark:border-primary-700 pl-4' : ''}
-                  >
+                  <div key={review.id}>
+                    {index > 0 && (
+                      <div className="flex items-center gap-2 mb-2 text-xs text-gray-400 dark:text-gray-500">
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        <span>이어지는 리뷰</span>
+                      </div>
+                    )}
                     <ReviewCard
                       review={review}
                       isAdmin={isAdmin}

@@ -3,8 +3,9 @@
 -- ============================================
 
 -- 1. reviews 테이블에 parent_review_id 컬럼 추가
+-- reviews.id가 TEXT 타입이므로 parent_review_id도 TEXT로 생성
 ALTER TABLE reviews
-ADD COLUMN IF NOT EXISTS parent_review_id UUID REFERENCES reviews(id) ON DELETE CASCADE;
+ADD COLUMN IF NOT EXISTS parent_review_id TEXT REFERENCES reviews(id) ON DELETE CASCADE;
 
 -- 2. parent_review_id 인덱스 추가 (조회 성능 향상)
 CREATE INDEX IF NOT EXISTS idx_reviews_parent_review_id ON reviews(parent_review_id);
@@ -18,7 +19,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_thread ON reviews(parent_review_id, creat
 
 -- 모든 스레드 확인 (부모 리뷰와 자식 리뷰들)
 SELECT
-  COALESCE(parent_review_id::text, 'ROOT') as thread_root,
+  COALESCE(parent_review_id, 'ROOT') as thread_root,
   id,
   webtoon_title,
   episode,

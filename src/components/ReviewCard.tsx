@@ -213,16 +213,17 @@ export function ReviewCard({
       </div>
 
       {/* 이미지 캐러셀 */}
-      <div className="relative bg-black">
-        <img
-          src={review.imageUrls[currentImageIndex]}
-          alt={`${review.webtoonTitle} 캡쳐 ${currentImageIndex + 1}`}
-          className="w-full object-contain"
-          style={{ maxHeight: '70vh' }}
-        />
+      {review.imageUrls.length > 0 && (
+        <div className="relative bg-black">
+          <img
+            src={review.imageUrls[currentImageIndex]}
+            alt={`${review.webtoonTitle} 캡쳐 ${currentImageIndex + 1}`}
+            className="w-full object-contain"
+            style={{ maxHeight: '70vh' }}
+          />
 
-        {/* 이미지가 여러 장일 때만 네비게이션 표시 */}
-        {review.imageUrls.length > 1 && (
+          {/* 이미지가 여러 장일 때만 네비게이션 표시 */}
+          {review.imageUrls.length > 1 && (
           <>
             {/* 이전 버튼 */}
             <button
@@ -267,8 +268,9 @@ export function ReviewCard({
               {currentImageIndex + 1} / {review.imageUrls.length}
             </div>
           </>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* 댓글 섹션 */}
       <div className="p-4 space-y-3">
