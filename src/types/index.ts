@@ -8,6 +8,7 @@ export interface Review {
   comments: Comment[];
   createdAt: Date;
   parentReviewId?: string; // 스레드 기능: 부모 리뷰 ID
+  isSpoiler?: boolean; // 스포일러 여부
 }
 
 export interface Comment {
@@ -18,6 +19,7 @@ export interface Comment {
   authorEmail: string;
   createdAt: Date;
   reactions: Reaction[];
+  isSpoiler?: boolean; // 스포일러 여부
 }
 
 export interface Reaction {
