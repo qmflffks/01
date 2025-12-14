@@ -13,6 +13,7 @@ interface ReviewCardProps {
   onUpdateReview: (reviewId: string, webtoonTitle: string, episode?: string) => void;
   onUpdateComment: (reviewId: string, commentId: string, text: string) => void;
   onContinueReview: (reviewId: string, webtoonTitle: string, nextEpisode?: string) => void;
+  isInThread?: boolean; // 스레드 내부 리뷰인지 여부
 }
 
 export function ReviewCard({
@@ -24,6 +25,7 @@ export function ReviewCard({
   onUpdateReview,
   onUpdateComment,
   onContinueReview,
+  isInThread = false,
 }: ReviewCardProps) {
   const { userNickname, user } = useAdmin();
   const [newComment, setNewComment] = useState('');
@@ -124,7 +126,7 @@ export function ReviewCard({
   };
 
   return (
-    <article className="card overflow-hidden">
+    <article className={isInThread ? 'overflow-hidden' : 'card overflow-hidden'}>
       {/* 헤더 */}
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
