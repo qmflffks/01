@@ -100,10 +100,25 @@ function AppContent() {
     setLoading(false);
   }, []);
 
-  // 리뷰를 스레드별로 그룹화하는 함수
+  // 리뷰를 스레드별로 그룹화하는 함수 (다단계 스레드 지원)
   const groupReviewsByThread = (reviews: Review[]): Review[][] => {
     const threads: Review[][] = [];
     const processedIds = new Set<string>();
+
+    // 특정 리뷰의 모든 자손을 재귀적으로 찾는 함수
+    const collectDescendants = (parentId: string, allReviews: Review[]): Review[] => {
+      const directChildren = allReviews.filter((r) => r.parentReviewId === parentId);
+      directChildren.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+      const descendants: Review[] = [];
+      directChildren.forEach((child) => {
+        descendants.push(child);
+        // 재귀적으로 자식의 자식들도 수집
+        descendants.push(...collectDescendants(child.id, allReviews));
+      });
+
+      return descendants;
+    };
 
     reviews.forEach((review) => {
       // 이미 처리된 리뷰는 건너뛰기
@@ -112,17 +127,15 @@ function AppContent() {
       // 부모 리뷰가 아닌 경우 건너뛰기 (나중에 부모와 함께 처리됨)
       if (review.parentReviewId) return;
 
-      // 스레드 시작 (부모 리뷰)
+      // 스레드 시작 (루트 리뷰)
       const thread: Review[] = [review];
       processedIds.add(review.id);
 
-      // 이 리뷰를 부모로 하는 자식 리뷰들 찾기
-      const children = reviews.filter((r) => r.parentReviewId === review.id);
-      children.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-
-      children.forEach((child) => {
-        thread.push(child);
-        processedIds.add(child.id);
+      // 모든 자손 리뷰들 재귀적으로 찾기
+      const descendants = collectDescendants(review.id, reviews);
+      descendants.forEach((descendant) => {
+        thread.push(descendant);
+        processedIds.add(descendant.id);
       });
 
       threads.push(thread);
