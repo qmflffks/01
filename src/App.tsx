@@ -136,8 +136,14 @@ function AppContent() {
       // 에피소드 검색
       if (review.episode && review.episode.toLowerCase().includes(query)) return true;
 
+      // 작성자 닉네임 검색
+      if (review.authorNickname.toLowerCase().includes(query)) return true;
+
       // 댓글 텍스트 검색
       if (review.comments.some((comment) => comment.text.toLowerCase().includes(query))) return true;
+
+      // 댓글 작성자 검색
+      if (review.comments.some((comment) => comment.authorNickname.toLowerCase().includes(query))) return true;
 
       return false;
     });
@@ -338,7 +344,7 @@ function AppContent() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="웹툰 제목, 에피소드, 댓글 내용으로 검색..."
+                placeholder="웹툰 제목, 에피소드, 작성자, 댓글로 검색..."
                 className="w-full px-4 py-3 pl-11 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
               />
               <svg
