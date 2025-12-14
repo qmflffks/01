@@ -28,6 +28,7 @@ function AppContent() {
   const [parentReviewId, setParentReviewId] = useState<string | undefined>();
   const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(new Set());
   const [displayCount, setDisplayCount] = useState(10); // 표시할 스레드 개수
+  const [searchQuery, setSearchQuery] = useState(''); // 검색어
 
   // 브라우저 제목을 블로그 제목으로 업데이트
   useEffect(() => {
@@ -122,6 +123,25 @@ function AppContent() {
 
     setLoading(false);
   }, []);
+
+  // 검색어로 리뷰 필터링
+  const filterReviewsBySearch = (reviews: Review[]): Review[] => {
+    if (!searchQuery.trim()) return reviews;
+
+    const query = searchQuery.toLowerCase();
+    return reviews.filter((review) => {
+      // 웹툰 제목 검색
+      if (review.webtoonTitle.toLowerCase().includes(query)) return true;
+
+      // 에피소드 검색
+      if (review.episode && review.episode.toLowerCase().includes(query)) return true;
+
+      // 댓글 텍스트 검색
+      if (review.comments.some((comment) => comment.text.toLowerCase().includes(query))) return true;
+
+      return false;
+    });
+  };
 
   // 리뷰를 스레드별로 그룹화하는 함수 (다단계 스레드 지원)
   const groupReviewsByThread = (reviews: Review[]): Review[][] => {
@@ -310,11 +330,49 @@ function AppContent() {
           </>
         )}
 
+        {/* 검색 바 */}
+        {reviews.length > 0 && (
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="웹툰 제목, 에피소드, 댓글 내용으로 검색..."
+                className="w-full px-4 py-3 pl-11 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 리뷰 목록 */}
         {reviews.length > 0 ? (
           <>
             <div className="space-y-6">
-              {groupReviewsByThread(reviews).slice(0, displayCount).map((thread) => {
+              {groupReviewsByThread(filterReviewsBySearch(reviews)).slice(0, displayCount).map((thread) => {
                 const threadId = thread[0].id;
                 const isCollapsed = collapsedThreads.has(threadId);
                 const canCollapse = thread.length > 2;
@@ -394,7 +452,7 @@ function AppContent() {
             </div>
 
             {/* 더 보기 버튼 */}
-            {groupReviewsByThread(reviews).length > displayCount && (
+            {groupReviewsByThread(filterReviewsBySearch(reviews)).length > displayCount && (
               <div className="mt-6 text-center">
                 <button
                   onClick={() => setDisplayCount((prev) => prev + 10)}
@@ -404,6 +462,25 @@ function AppContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                   이전 리뷰 더 보기
+                </button>
+              </div>
+            )}
+
+            {/* 검색 결과 없음 */}
+            {searchQuery && groupReviewsByThread(filterReviewsBySearch(reviews)).length === 0 && (
+              <div className="text-center py-16">
+                <div className="text-6xl mb-4">🔍</div>
+                <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  검색 결과가 없어요
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  "{searchQuery}"에 대한 리뷰를 찾을 수 없습니다
+                </p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-primary-500 hover:text-primary-600 font-medium"
+                >
+                  검색 초기화
                 </button>
               </div>
             )}
