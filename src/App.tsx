@@ -26,7 +26,7 @@ function AppContent() {
   const [prefillWebtoonTitle, setPrefillWebtoonTitle] = useState<string | undefined>();
   const [prefillEpisode, setPrefillEpisode] = useState<string | undefined>();
   const [parentReviewId, setParentReviewId] = useState<string | undefined>();
-  const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(new Set());
+  const [expandedCounts, setExpandedCounts] = useState<Map<string, number>>(new Map()); // threadId -> 표시할 중간 리뷰 개수
   const [displayCount, setDisplayCount] = useState(10); // 표시할 스레드 개수
   const [searchQuery, setSearchQuery] = useState(''); // 검색어
 
@@ -110,13 +110,13 @@ function AppContent() {
 
     // 3개 이상의 리뷰를 가진 스레드를 자동으로 접힌 상태로 설정
     const threads = groupReviewsByThread(data);
-    const newCollapsedThreads = new Set<string>();
+    const newExpandedCounts = new Map<string, number>();
     threads.forEach((thread) => {
       if (thread.length > 2) {
-        newCollapsedThreads.add(thread[0].id);
+        newExpandedCounts.set(thread[0].id, 0); // 0 = 완전히 접힌 상태
       }
     });
-    setCollapsedThreads(newCollapsedThreads);
+    setExpandedCounts(newExpandedCounts);
 
     // 리뷰 로드 시 표시 개수 초기화
     setDisplayCount(10);
@@ -260,15 +260,27 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleThreadCollapse = (threadId: string) => {
-    setCollapsedThreads((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(threadId)) {
-        newSet.delete(threadId);
+  const expandThread = (threadId: string, totalMiddleCount: number) => {
+    setExpandedCounts((prev) => {
+      const newMap = new Map(prev);
+      const currentCount = newMap.get(threadId) || 0;
+      const newCount = currentCount + 5;
+
+      // 모든 중간 리뷰를 표시하면 Map에서 제거 (완전히 펼침)
+      if (newCount >= totalMiddleCount) {
+        newMap.delete(threadId);
       } else {
-        newSet.add(threadId);
+        newMap.set(threadId, newCount);
       }
-      return newSet;
+      return newMap;
+    });
+  };
+
+  const collapseThread = (threadId: string) => {
+    setExpandedCounts((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(threadId, 0); // 0 = 완전히 접힌 상태
+      return newMap;
     });
   };
 
@@ -380,42 +392,54 @@ function AppContent() {
             <div className="space-y-6">
               {groupReviewsByThread(filterReviewsBySearch(reviews)).slice(0, displayCount).map((thread) => {
                 const threadId = thread[0].id;
-                const isCollapsed = collapsedThreads.has(threadId);
-                const canCollapse = thread.length > 2;
+                const middleCount = thread.length - 2; // 첫/마지막 제외한 중간 리뷰 개수
+                const expandedCount = expandedCounts.get(threadId);
+                const isCollapsible = middleCount > 0;
+                const isFullyExpanded = expandedCount === undefined;
 
-                // 숨겨진 리뷰 개수 계산
-                const hiddenCount = canCollapse && isCollapsed ? thread.length - 2 : 0;
+                // 표시해야 할 중간 리뷰 개수
+                const visibleMiddleCount = isFullyExpanded ? middleCount : (expandedCount || 0);
+                const remainingCount = middleCount - visibleMiddleCount;
 
                 return (
                   <div key={threadId} className="card overflow-hidden">
                     {thread.map((review, index) => {
-                      // 접혀있을 때 중간 리뷰는 건너뛰기
-                      if (isCollapsed && index > 0 && index < thread.length - 1) {
-                        // 첫 번째 숨겨진 리뷰 위치에만 "더 보기" 버튼 표시
-                        if (index === 1) {
-                          return (
-                            <div key={`collapse-${review.id}`}>
-                              <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                                <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">이어지는 리뷰</span>
+                      const isFirst = index === 0;
+                      const isLast = index === thread.length - 1;
+                      const isMiddle = !isFirst && !isLast;
+
+                      // 중간 리뷰 처리
+                      if (isMiddle) {
+                        const middleIndex = index - 1; // 중간 리뷰의 인덱스 (0부터 시작)
+
+                        // 표시해야 할 중간 리뷰 범위를 벗어나면 건너뛰기
+                        if (middleIndex >= visibleMiddleCount) {
+                          // 첫 번째 숨겨진 리뷰 위치에 "더 보기" 버튼 표시
+                          if (middleIndex === visibleMiddleCount) {
+                            return (
+                              <div key={`expand-${review.id}`}>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                                  <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">이어지는 리뷰</span>
+                                </div>
+                                <button
+                                  onClick={() => expandThread(threadId, middleCount)}
+                                  className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center gap-2"
+                                >
+                                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                                    ... {Math.min(5, remainingCount)}개 더 보기 ({remainingCount}개 남음) ...
+                                  </span>
+                                </button>
                               </div>
-                              <button
-                                onClick={() => toggleThreadCollapse(threadId)}
-                                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center gap-2"
-                              >
-                                <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  ... {hiddenCount}개의 리뷰 더 보기 ...
-                                </span>
-                              </button>
-                            </div>
-                          );
+                            );
+                          }
+                          return null;
                         }
-                        return null;
                       }
 
                       return (
@@ -428,9 +452,9 @@ function AppContent() {
                                 </svg>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">이어지는 리뷰</span>
                               </div>
-                              {canCollapse && !isCollapsed && index === 1 && (
+                              {isCollapsible && isFullyExpanded && index === 1 && (
                                 <button
-                                  onClick={() => toggleThreadCollapse(threadId)}
+                                  onClick={() => collapseThread(threadId)}
                                   className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 >
                                   접기
