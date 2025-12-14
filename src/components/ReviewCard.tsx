@@ -51,6 +51,9 @@ export function ReviewCard({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState('');
 
+  // 스포일러 표시 상태
+  const [showSpoiler, setShowSpoiler] = useState(false);
+
   const handleAddComment = () => {
     if (!newComment.trim() && !commentImage) return;
 
@@ -214,15 +217,28 @@ export function ReviewCard({
         )}
       </div>
 
-      {/* 이미지 캐러셀 */}
-      {review.imageUrls.length > 0 && (
-        <div className="relative bg-black">
-          <img
-            src={review.imageUrls[currentImageIndex]}
-            alt={`${review.webtoonTitle} 캡쳐 ${currentImageIndex + 1}`}
-            className="w-full object-contain"
-            style={{ maxHeight: '70vh' }}
-          />
+      {/* 스포일러 경고 및 블러 처리 */}
+      <div className={review.isSpoiler && !showSpoiler ? 'relative' : ''}>
+        {review.isSpoiler && !showSpoiler && (
+          <div
+            onClick={() => setShowSpoiler(true)}
+            className="absolute inset-0 z-10 bg-gray-900/80 backdrop-blur-md cursor-pointer flex flex-col items-center justify-center gap-3"
+          >
+            <div className="text-6xl">⚠️</div>
+            <div className="text-white text-xl font-bold">스포일러 주의</div>
+            <div className="text-gray-300 text-sm">클릭해서 보기</div>
+          </div>
+        )}
+
+        {/* 이미지 캐러셀 */}
+        {review.imageUrls.length > 0 && (
+          <div className={`relative bg-black ${review.isSpoiler && !showSpoiler ? 'filter blur-lg' : ''}`}>
+            <img
+              src={review.imageUrls[currentImageIndex]}
+              alt={`${review.webtoonTitle} 캡쳐 ${currentImageIndex + 1}`}
+              className="w-full object-contain"
+              style={{ maxHeight: '70vh' }}
+            />
 
           {/* 이미지가 여러 장일 때만 네비게이션 표시 */}
           {review.imageUrls.length > 1 && (
@@ -271,11 +287,11 @@ export function ReviewCard({
             </div>
           </>
           )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* 댓글 섹션 */}
-      <div className="p-4 space-y-3">
+        {/* 댓글 섹션 */}
+        <div className={`p-4 space-y-3 ${review.isSpoiler && !showSpoiler ? 'filter blur-lg' : ''}`}>
         {/* 기존 댓글들 */}
         {review.comments.length > 0 && (
           <div className="space-y-2">
@@ -440,6 +456,7 @@ export function ReviewCard({
             )}
           </>
         )}
+        </div>
       </div>
 
       {/* 이어서 작성 버튼 */}

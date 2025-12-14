@@ -26,6 +26,7 @@ function AppContent() {
   const [prefillWebtoonTitle, setPrefillWebtoonTitle] = useState<string | undefined>();
   const [prefillEpisode, setPrefillEpisode] = useState<string | undefined>();
   const [parentReviewId, setParentReviewId] = useState<string | undefined>();
+  const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(new Set());
 
   // base path 제거한 실제 경로 계산
   const getRelativePath = (pathname: string) => {
@@ -211,6 +212,18 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const toggleThreadCollapse = (threadId: string) => {
+    setCollapsedThreads((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(threadId)) {
+        newSet.delete(threadId);
+      } else {
+        newSet.add(threadId);
+      }
+      return newSet;
+    });
+  };
+
   const handleCancelNewReview = () => {
     setShowNewReviewForm(false);
     setPrefillWebtoonTitle(undefined);
@@ -278,33 +291,83 @@ function AppContent() {
         {/* 리뷰 목록 */}
         {reviews.length > 0 ? (
           <div className="space-y-6">
-            {groupReviewsByThread(reviews).map((thread) => (
-              <div key={thread[0].id} className="card overflow-hidden">
-                {thread.map((review, index) => (
-                  <div key={review.id}>
-                    {index > 0 && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                        <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">이어지는 리뷰</span>
+            {groupReviewsByThread(reviews).map((thread) => {
+              const threadId = thread[0].id;
+              const isCollapsed = collapsedThreads.has(threadId);
+              const canCollapse = thread.length > 2;
+
+              // 숨겨진 리뷰 개수 계산
+              const hiddenCount = canCollapse && isCollapsed ? thread.length - 2 : 0;
+
+              return (
+                <div key={threadId} className="card overflow-hidden">
+                  {thread.map((review, index) => {
+                    // 접혀있을 때 중간 리뷰는 건너뛰기
+                    if (isCollapsed && index > 0 && index < thread.length - 1) {
+                      // 첫 번째 숨겨진 리뷰 위치에만 "더 보기" 버튼 표시
+                      if (index === 1) {
+                        return (
+                          <div key={`collapse-${review.id}`}>
+                            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                              <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">이어지는 리뷰</span>
+                            </div>
+                            <button
+                              onClick={() => toggleThreadCollapse(threadId)}
+                              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                              <span className="text-sm text-gray-600 dark:text-gray-400">
+                                ... {hiddenCount}개의 리뷰 더 보기 ...
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }
+
+                    return (
+                      <div key={review.id}>
+                        {index > 0 && (
+                          <div className="flex items-center justify-between gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">이어지는 리뷰</span>
+                            </div>
+                            {canCollapse && !isCollapsed && index === 1 && (
+                              <button
+                                onClick={() => toggleThreadCollapse(threadId)}
+                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                              >
+                                접기
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <ReviewCard
+                          review={review}
+                          isAdmin={isAdmin}
+                          onAddComment={handleAddComment}
+                          onDeleteReview={handleDeleteReview}
+                          onDeleteComment={handleDeleteComment}
+                          onUpdateReview={handleUpdateReview}
+                          onUpdateComment={handleUpdateComment}
+                          onContinueReview={handleContinueReview}
+                          isInThread={thread.length > 1}
+                        />
                       </div>
-                    )}
-                    <ReviewCard
-                      review={review}
-                      isAdmin={isAdmin}
-                      onAddComment={handleAddComment}
-                      onDeleteReview={handleDeleteReview}
-                      onDeleteComment={handleDeleteComment}
-                      onUpdateReview={handleUpdateReview}
-                      onUpdateComment={handleUpdateComment}
-                      onContinueReview={handleContinueReview}
-                      isInThread={thread.length > 1}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-16">

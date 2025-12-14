@@ -17,6 +17,7 @@ export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefill
   const [episode, setEpisode] = useState(prefillEpisode || '');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [firstComment, setFirstComment] = useState('');
+  const [isSpoiler, setIsSpoiler] = useState(false);
 
   const handleSubmit = () => {
     if (!webtoonTitle.trim()) {
@@ -44,6 +45,7 @@ export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefill
       authorEmail: user?.email || '',
       comments,
       createdAt: new Date(),
+      isSpoiler,
     };
 
     onSubmit(review);
@@ -118,6 +120,20 @@ export function NewReviewForm({ onSubmit, onCancel, prefillWebtoonTitle, prefill
           rows={4}
           className="w-full px-3 py-2 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none resize-none"
         />
+      </div>
+
+      {/* 스포일러 체크박스 */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="spoiler-checkbox"
+          checked={isSpoiler}
+          onChange={(e) => setIsSpoiler(e.target.checked)}
+          className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+        />
+        <label htmlFor="spoiler-checkbox" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+          ⚠️ 스포일러 포함
+        </label>
       </div>
 
       {/* 버튼 */}
