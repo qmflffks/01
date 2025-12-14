@@ -28,6 +28,13 @@ function AppContent() {
   const [parentReviewId, setParentReviewId] = useState<string | undefined>();
   const [collapsedThreads, setCollapsedThreads] = useState<Set<string>>(new Set());
 
+  // 브라우저 제목을 블로그 제목으로 업데이트
+  useEffect(() => {
+    if (blogTitle) {
+      document.title = blogTitle;
+    }
+  }, [blogTitle]);
+
   // base path 제거한 실제 경로 계산
   const getRelativePath = (pathname: string) => {
     const base = '/01/'; // vite.config.ts의 base와 동일
@@ -98,6 +105,17 @@ function AppContent() {
     setLoading(true);
     const data = await fetchReviews();
     setReviews(data);
+
+    // 3개 이상의 리뷰를 가진 스레드를 자동으로 접힌 상태로 설정
+    const threads = groupReviewsByThread(data);
+    const newCollapsedThreads = new Set<string>();
+    threads.forEach((thread) => {
+      if (thread.length > 2) {
+        newCollapsedThreads.add(thread[0].id);
+      }
+    });
+    setCollapsedThreads(newCollapsedThreads);
+
     setLoading(false);
   }, []);
 
