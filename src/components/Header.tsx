@@ -24,7 +24,9 @@ export function Header() {
           {user && (
             <button
               onClick={() => {
-                window.history.pushState({}, '', './settings');
+                const base = import.meta.env.BASE_URL; // vite.config.ts의 base 값
+                const settingsPath = `${base}settings`;
+                window.history.pushState({}, '', settingsPath);
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
