@@ -55,7 +55,17 @@ function AppContent() {
       setCurrentPath(window.location.pathname);
     };
 
+    // 커스텀 이벤트 리스너 추가 (버튼 클릭 등으로 인한 경로 변경)
+    const handleRouteChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.path) {
+        setCurrentPath(customEvent.detail.path);
+        window.scrollTo(0, 0);
+      }
+    };
+
     window.addEventListener('popstate', handlePathChange);
+    window.addEventListener('route-change', handleRouteChange);
 
     // 링크 클릭 감지
     const handleClick = (e: Event) => {
@@ -79,6 +89,7 @@ function AppContent() {
 
     return () => {
       window.removeEventListener('popstate', handlePathChange);
+      window.removeEventListener('route-change', handleRouteChange);
       document.removeEventListener('click', handleClick, true);
     };
   }, []);
