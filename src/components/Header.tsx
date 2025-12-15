@@ -27,7 +27,8 @@ export function Header() {
                 const base = import.meta.env.BASE_URL; // vite.config.ts의 base 값
                 const settingsPath = `${base}settings`;
                 window.history.pushState({}, '', settingsPath);
-                window.dispatchEvent(new PopStateEvent('popstate'));
+                // 커스텀 이벤트로 경로 변경 알림
+                window.dispatchEvent(new CustomEvent('route-change', { detail: { path: settingsPath } }));
               }}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="설정"
