@@ -33,7 +33,7 @@ export function ReviewCard({
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [commentImage, setCommentImage] = useState<string | null>(null);
+  const [commentImages, setCommentImages] = useState<string[]>([]); // 댓글 이미지 (최대 2개)
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false); // Reader Mode 이미지 로딩 상태
   const [commentImagesLoaded, setCommentImagesLoaded] = useState<Set<string>>(new Set()); // 댓글 이미지 로딩 상태
@@ -59,12 +59,12 @@ export function ReviewCard({
   const [showSpoiler, setShowSpoiler] = useState(false);
 
   const handleAddComment = () => {
-    if (!newComment.trim() && !commentImage) return;
+    if (!newComment.trim() && commentImages.length === 0) return;
 
     const comment: Comment = {
       id: generateId(),
       text: newComment.trim(),
-      imageUrl: commentImage || undefined,
+      imageUrls: commentImages.length > 0 ? commentImages : undefined,
       authorNickname: userNickname || '익명',
       authorEmail: user?.email || '',
       createdAt: new Date(),
@@ -73,7 +73,7 @@ export function ReviewCard({
 
     onAddComment(review.id, comment);
     setNewComment('');
-    setCommentImage(null);
+    setCommentImages([]);
     setShowCommentInput(false);
   };
 
@@ -100,13 +100,9 @@ export function ReviewCard({
     setEditCommentText('');
   };
 
-  const handleImageProcessed = (storageUrl: string) => {
-    setCommentImage(storageUrl);
+  const handleImagesProcessed = (storageUrls: string[]) => {
+    setCommentImages(storageUrls);
     setShowImageUploader(false);
-  };
-
-  const removeCommentImage = () => {
-    setCommentImage(null);
   };
 
   const loadCommentImage = (commentId: string) => {
@@ -138,8 +134,8 @@ export function ReviewCard({
 
   return (
     <article
-      className={`${isInThread ? 'overflow-hidden' : 'card overflow-hidden'} ${
-        readerMode ? 'reader-mode-card' : ''
+      className={`${isInThread ? '' : 'card'} ${
+        readerMode ? 'reader-mode-card' : 'overflow-hidden'
       }`}
       style={readerMode ? { fontSize: `${fontSize}px` } : undefined}
     >
@@ -363,21 +359,26 @@ export function ReviewCard({
                           {comment.text}
                         </p>
                       )}
-                      {comment.imageUrl && (
+                      {comment.imageUrls && comment.imageUrls.length > 0 && (
                         readerMode && !commentImagesLoaded.has(comment.id) ? (
                           <button
                             onClick={() => loadCommentImage(comment.id)}
                             className="mt-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 text-sm"
                           >
-                            <span className="emoji-hide">🖼️ </span>이미지 보기
+                            <span className="emoji-hide">🖼️ </span>이미지 {comment.imageUrls.length}개 보기
                           </button>
                         ) : (
-                          <img
-                            src={comment.imageUrl}
-                            alt="댓글 이미지"
-                            className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
-                            style={{ maxHeight: readerMode ? '200px' : '300px' }}
-                          />
+                          <div className="mt-2 grid grid-cols-2 gap-2">
+                            {comment.imageUrls.map((imageUrl, idx) => (
+                              <img
+                                key={idx}
+                                src={imageUrl}
+                                alt={`댓글 이미지 ${idx + 1}`}
+                                className="w-full rounded-lg border border-gray-200 dark:border-gray-600"
+                                style={{ maxHeight: readerMode ? '200px' : '300px', objectFit: 'cover' }}
+                              />
+                            ))}
+                          </div>
                         )
                       )}
                       <p className="text-xs text-gray-400 mt-1">
@@ -431,40 +432,59 @@ export function ReviewCard({
                   autoFocus
                 />
 
-                {/* 이미지 첨부 */}
-                {!showImageUploader && !commentImage && (
-                  <button
-                    onClick={() => setShowImageUploader(true)}
-                    className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                  >
-                    <span className="emoji-hide">📎 </span>이미지 첨부
-                  </button>
-                )}
+                {/* 이미지 업로더 */}
+                {showImageUploader ? (
+                  <CommentImageUploader
+                    userNickname={userNickname || '익명'}
+                    onImagesProcessed={handleImagesProcessed}
+                    onCancel={() => setShowImageUploader(false)}
+                  />
+                ) : (
+                  <>
+                    {/* 이미지 미리보기 */}
+                    {commentImages.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {commentImages.map((imageUrl, idx) => (
+                          <div key={idx} className="relative">
+                            <img
+                              src={imageUrl}
+                              alt={`첨부 이미지 ${idx + 1}`}
+                              className="w-full aspect-square object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                            />
+                            <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 text-white text-xs rounded">
+                              {idx + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                {/* 이미지 미리보기 */}
-                {commentImage && (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <img
-                        src={commentImage}
-                        alt="첨부 이미지"
-                        className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600"
-                        style={{ maxHeight: '200px' }}
-                      />
-                    </div>
-                    <button
-                      onClick={removeCommentImage}
-                      className="px-3 py-2 text-sm text-red-500 hover:text-red-600"
-                    >
-                      ✕ 이미지 제거
-                    </button>
-                  </div>
+                    {/* 이미지 첨부 버튼 */}
+                    {commentImages.length === 0 && (
+                      <button
+                        onClick={() => setShowImageUploader(true)}
+                        className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <span className="emoji-hide">📎 </span>이미지 첨부 (최대 2장)
+                      </button>
+                    )}
+
+                    {/* 이미지 재선택 버튼 */}
+                    {commentImages.length > 0 && (
+                      <button
+                        onClick={() => setShowImageUploader(true)}
+                        className="px-3 py-2 text-sm text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        이미지 다시 선택
+                      </button>
+                    )}
+                  </>
                 )}
 
                 <div className="flex gap-2">
                   <button
                     onClick={handleAddComment}
-                    disabled={!newComment.trim() && !commentImage}
+                    disabled={!newComment.trim() && commentImages.length === 0}
                     className="flex-1 btn-primary py-2.5 sm:py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     등록
@@ -473,7 +493,7 @@ export function ReviewCard({
                     onClick={() => {
                       setShowCommentInput(false);
                       setNewComment('');
-                      setCommentImage(null);
+                      setCommentImages([]);
                       setShowImageUploader(false);
                     }}
                     className="btn-secondary py-2.5 sm:py-2"
@@ -514,14 +534,6 @@ export function ReviewCard({
         </div>
       )}
 
-      {/* 이미지 업로더 모달 */}
-      {showImageUploader && (
-        <CommentImageUploader
-          userNickname={userNickname || '익명'}
-          onImageProcessed={handleImageProcessed}
-          onCancel={() => setShowImageUploader(false)}
-        />
-      )}
     </article>
   );
 }

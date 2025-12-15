@@ -82,15 +82,30 @@ export async function fetchReviews(): Promise<Review[]> {
         createdAt: new Date(review.created_at),
         parentReviewId: review.parent_review_id || undefined,
         isSpoiler: review.is_spoiler || false,
-        comments: (comments || []).map((c) => ({
-          id: c.id,
-          text: c.text,
-          imageUrl: c.image_url,
-          authorNickname: c.author_nickname || '익명',
-          authorEmail: c.author_email || '',
-          createdAt: new Date(c.created_at),
-          reactions: [],
-        })),
+        comments: (comments || []).map((c) => {
+          // image_url이 JSON 배열이면 파싱, 문자열이면 단일 이미지로 처리 (하위 호환성)
+          let imageUrls: string[] | undefined;
+          if (c.image_url) {
+            try {
+              // JSON 배열인지 확인
+              const parsed = JSON.parse(c.image_url);
+              imageUrls = Array.isArray(parsed) ? parsed : [c.image_url];
+            } catch {
+              // JSON이 아니면 단일 이미지
+              imageUrls = [c.image_url];
+            }
+          }
+
+          return {
+            id: c.id,
+            text: c.text,
+            imageUrls,
+            authorNickname: c.author_nickname || '익명',
+            authorEmail: c.author_email || '',
+            createdAt: new Date(c.created_at),
+            reactions: [],
+          };
+        }),
       } as Review;
     })
   );
@@ -166,7 +181,7 @@ export async function addComment(reviewId: string, comment: Comment): Promise<bo
     id: comment.id,
     review_id: reviewId,
     text: comment.text,
-    image_url: comment.imageUrl || null,
+    image_url: comment.imageUrls && comment.imageUrls.length > 0 ? JSON.stringify(comment.imageUrls) : null,
     author_nickname: comment.authorNickname,
     author_email: comment.authorEmail,
     created_at: comment.createdAt.toISOString(),
