@@ -7,7 +7,6 @@ import { CommentImageUploader } from './CommentImageUploader';
 
 interface ReviewCardProps {
   review: Review;
-  isAdmin: boolean;
   onAddComment: (reviewId: string, comment: Comment) => void;
   onDeleteReview: (reviewId: string) => void;
   onDeleteComment: (reviewId: string, commentId: string) => void;
@@ -19,7 +18,6 @@ interface ReviewCardProps {
 
 export function ReviewCard({
   review,
-  isAdmin,
   onAddComment,
   onDeleteReview,
   onDeleteComment,
@@ -28,7 +26,7 @@ export function ReviewCard({
   onContinueReview,
   isInThread = false,
 }: ReviewCardProps) {
-  const { userNickname, user } = useAdmin();
+  const { userNickname, user, isAdmin } = useAdmin();
   const { readerMode, fontSize } = useReader();
   const [newComment, setNewComment] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
@@ -37,6 +35,11 @@ export function ReviewCard({
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false); // Reader Mode 이미지 로딩 상태
   const [commentImagesLoaded, setCommentImagesLoaded] = useState<Set<string>>(new Set()); // 댓글 이미지 로딩 상태
+
+  // 현재 사용자가 리뷰 작성자인지 확인
+  const isReviewAuthor = user?.email === review.authorEmail;
+  // 현재 사용자가 관리자이거나 리뷰 작성자인 경우 수정/삭제 가능
+  const canEditReview = isAdmin || isReviewAuthor;
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % review.imageUrls.length);
@@ -156,7 +159,7 @@ export function ReviewCard({
             </p>
           </div>
         </div>
-        {isAdmin && (
+        {canEditReview && (
           <div className="flex gap-1">
             <button
               onClick={() => setIsEditingReview(!isEditingReview)}
@@ -387,7 +390,7 @@ export function ReviewCard({
                     </>
                   )}
                 </div>
-                {isAdmin && editingCommentId !== comment.id && (
+                {(isAdmin || user?.email === comment.authorEmail) && editingCommentId !== comment.id && (
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleStartEditComment(comment)}
@@ -414,8 +417,8 @@ export function ReviewCard({
           </div>
         )}
 
-        {/* 관리자 전용: 댓글 입력 */}
-        {isAdmin && (
+        {/* 댓글 입력 */}
+        {user && (
           <>
             {showCommentInput ? (
               <div className="space-y-2">
@@ -519,7 +522,7 @@ export function ReviewCard({
       </div>
 
       {/* 이어서 작성 버튼 */}
-      {isAdmin && (
+      {canEditReview && (
         <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={handleContinueReview}
