@@ -5,6 +5,7 @@ import { NewReviewForm } from './components/NewReviewForm';
 import { Settings } from './components/Settings';
 import { AdminProvider, useAdmin } from './contexts/AdminContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
+import { ReaderProvider } from './contexts/ReaderContext';
 import type { Review, Comment } from './types';
 import {
   fetchReviews,
@@ -543,7 +544,9 @@ function App() {
   return (
     <AdminProvider>
       <SettingsProvider>
-        <AppContent />
+        <ReaderProvider>
+          <AppContent />
+        </ReaderProvider>
       </SettingsProvider>
     </AdminProvider>
   );
