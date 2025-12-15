@@ -224,7 +224,7 @@ export function ReviewCard({
           </div>
         ) : (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 text-sm font-medium rounded-full">
-            📚 {review.webtoonTitle}
+            <span className="emoji-hide">📚 </span>{review.webtoonTitle}
             {review.episode && <span className="text-primary-500">EP.{review.episode}</span>}
           </span>
         )}
@@ -237,7 +237,7 @@ export function ReviewCard({
             onClick={() => setShowSpoiler(true)}
             className="absolute inset-0 z-10 bg-gray-900/80 backdrop-blur-md cursor-pointer flex flex-col items-center justify-center gap-3"
           >
-            <div className="text-6xl">⚠️</div>
+            <div className="text-6xl emoji-hide">⚠️</div>
             <div className="text-white text-xl font-bold">스포일러 주의</div>
             <div className="text-gray-300 text-sm">클릭해서 보기</div>
           </div>
@@ -327,7 +327,7 @@ export function ReviewCard({
                 key={comment.id}
                 className="group flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
               >
-                <span className="text-lg">💬</span>
+                <span className="text-lg emoji-hide">💬</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
                     @{comment.authorNickname}
@@ -369,7 +369,7 @@ export function ReviewCard({
                             onClick={() => loadCommentImage(comment.id)}
                             className="mt-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 text-sm"
                           >
-                            🖼️ 이미지 보기
+                            <span className="emoji-hide">🖼️ </span>이미지 보기
                           </button>
                         ) : (
                           <img
@@ -437,7 +437,7 @@ export function ReviewCard({
                     onClick={() => setShowImageUploader(true)}
                     className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                   >
-                    📎 이미지 첨부
+                    <span className="emoji-hide">📎 </span>이미지 첨부
                   </button>
                 )}
 

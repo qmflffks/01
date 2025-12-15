@@ -51,5 +51,26 @@
 
   .reader-mode-card button {
     @apply !rounded-none border border-gray-600 dark:border-gray-400;
+    font-size: 0.75rem !important; /* 버튼 글씨 작게 */
   }
+
+  /* 제목과 작성자 글씨 크기 작게 */
+  .reader-mode-card h2 {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .reader-mode-card h3 {
+    font-size: 0.875rem !important;
+  }
+
+  /* 이모티콘 숨기기 */
+  .reader-mode-card .emoji-hide {
+    display: none !important;
+  }
+}
+
+/* Reader Mode 전역 설정 (리더 모드 활성화 시) */
+.reader-mode .emoji-hide {
+  display: none !important;
 }
