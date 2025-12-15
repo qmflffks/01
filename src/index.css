@@ -20,4 +20,36 @@
   .card {
     @apply bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700;
   }
+
+  /* 2000년대 초 인터넷 스타일 (Reader Mode) */
+  .reader-mode-card {
+    @apply bg-white dark:bg-gray-900 !rounded-none !shadow-none border-2 border-gray-800 dark:border-gray-400;
+  }
+
+  .reader-mode-card .p-4 {
+    @apply !p-2;
+  }
+
+  .reader-mode-card .w-10.h-10 {
+    @apply !hidden;
+  }
+
+  .reader-mode-card .bg-primary-100 {
+    @apply !bg-transparent !border-0 !p-0;
+  }
+
+  .reader-mode-card .rounded-full,
+  .reader-mode-card .rounded-lg,
+  .reader-mode-card .rounded-xl {
+    @apply !rounded-none;
+  }
+
+  .reader-mode-card .shadow-md,
+  .reader-mode-card .shadow-lg {
+    @apply !shadow-none;
+  }
+
+  .reader-mode-card button {
+    @apply !rounded-none border border-gray-600 dark:border-gray-400;
+  }
 }

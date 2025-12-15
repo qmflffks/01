@@ -36,6 +36,7 @@ export function ReviewCard({
   const [commentImage, setCommentImage] = useState<string | null>(null);
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false); // Reader Mode 이미지 로딩 상태
+  const [commentImagesLoaded, setCommentImagesLoaded] = useState<Set<string>>(new Set()); // 댓글 이미지 로딩 상태
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % review.imageUrls.length);
@@ -108,6 +109,10 @@ export function ReviewCard({
     setCommentImage(null);
   };
 
+  const loadCommentImage = (commentId: string) => {
+    setCommentImagesLoaded((prev) => new Set(prev).add(commentId));
+  };
+
   const handleContinueReview = () => {
     // 에피소드 번호를 추출하고 +1
     let nextEpisode: string | undefined;
@@ -133,7 +138,9 @@ export function ReviewCard({
 
   return (
     <article
-      className={isInThread ? 'overflow-hidden' : 'card overflow-hidden'}
+      className={`${isInThread ? 'overflow-hidden' : 'card overflow-hidden'} ${
+        readerMode ? 'reader-mode-card' : ''
+      }`}
       style={readerMode ? { fontSize: `${fontSize}px` } : undefined}
     >
       {/* 헤더 */}
@@ -357,12 +364,21 @@ export function ReviewCard({
                         </p>
                       )}
                       {comment.imageUrl && (
-                        <img
-                          src={comment.imageUrl}
-                          alt="댓글 이미지"
-                          className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
-                          style={{ maxHeight: '300px' }}
-                        />
+                        readerMode && !commentImagesLoaded.has(comment.id) ? (
+                          <button
+                            onClick={() => loadCommentImage(comment.id)}
+                            className="mt-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 text-sm"
+                          >
+                            🖼️ 이미지 보기
+                          </button>
+                        ) : (
+                          <img
+                            src={comment.imageUrl}
+                            alt="댓글 이미지"
+                            className="max-w-full rounded-lg border border-gray-200 dark:border-gray-600 mt-2"
+                            style={{ maxHeight: readerMode ? '200px' : '300px' }}
+                          />
+                        )
                       )}
                       <p className="text-xs text-gray-400 mt-1">
                         {formatDate(comment.createdAt)}
@@ -402,13 +418,16 @@ export function ReviewCard({
           <>
             {showCommentInput ? (
               <div className="space-y-2">
-                <input
-                  type="text"
+                <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && !commentImage && handleAddComment()}
-                  placeholder="리뷰 코멘트를 입력하세요..."
-                  className="w-full px-3 py-3 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.ctrlKey && !e.nativeEvent.isComposing) {
+                      handleAddComment();
+                    }
+                  }}
+                  placeholder="리뷰 코멘트를 입력하세요... (Ctrl+Enter로 등록)"
+                  className="w-full px-3 py-3 text-base sm:text-sm bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 outline-none resize-y min-h-[80px]"
                   autoFocus
                 />
 
