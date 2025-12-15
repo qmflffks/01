@@ -323,30 +323,26 @@ function AppContent() {
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        {/* 관리자 전용: 새 리뷰 작성 */}
-        {isAdmin && (
-          <>
-            {showNewReviewForm ? (
-              <div className="mb-6">
-                <NewReviewForm
-                  onSubmit={handleSubmitNewReview}
-                  onCancel={handleCancelNewReview}
-                  prefillWebtoonTitle={prefillWebtoonTitle}
-                  prefillEpisode={prefillEpisode}
-                />
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowNewReviewForm(true)}
-                className="w-full mb-6 p-4 card hover:shadow-lg transition-shadow flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="font-medium">새 리뷰 작성</span>
-              </button>
-            )}
-          </>
+        {/* 새 리뷰 작성 */}
+        {showNewReviewForm ? (
+          <div className="mb-6">
+            <NewReviewForm
+              onSubmit={handleSubmitNewReview}
+              onCancel={handleCancelNewReview}
+              prefillWebtoonTitle={prefillWebtoonTitle}
+              prefillEpisode={prefillEpisode}
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowNewReviewForm(true)}
+            className="w-full mb-6 p-4 card hover:shadow-lg transition-shadow flex items-center justify-center gap-2 text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="font-medium">새 리뷰 작성</span>
+          </button>
         )}
 
         {/* 검색 바 */}
@@ -465,7 +461,6 @@ function AppContent() {
                           )}
                           <ReviewCard
                             review={review}
-                            isAdmin={isAdmin}
                             onAddComment={handleAddComment}
                             onDeleteReview={handleDeleteReview}
                             onDeleteComment={handleDeleteComment}
@@ -523,7 +518,7 @@ function AppContent() {
               아직 리뷰가 없어요
             </h2>
             <p className="text-gray-500 dark:text-gray-400">
-              {isAdmin ? '첫 번째 웹툰 리뷰를 작성해보세요!' : '곧 리뷰가 올라올 예정이에요!'}
+              첫 번째 웹툰 리뷰를 작성해보세요!
             </p>
           </div>
         )}
