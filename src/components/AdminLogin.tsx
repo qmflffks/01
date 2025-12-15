@@ -71,8 +71,18 @@ export function AdminLogin() {
       </button>
 
       {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-80 shadow-xl">
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowModal(false);
+              setEmail('');
+              setPassword('');
+              setError('');
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-80 shadow-xl my-auto">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
               관리자 로그인
             </h3>
