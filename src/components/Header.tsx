@@ -6,7 +6,7 @@ import { useReader } from '../contexts/ReaderContext';
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
-  const { isAdmin } = useAdmin();
+  const { user } = useAdmin();
   const { blogTitle } = useSettings();
   const { readerMode, toggleReaderMode } = useReader();
 
@@ -21,7 +21,7 @@ export function Header() {
         </a>
 
         <div className="flex items-center gap-2">
-          {isAdmin && (
+          {user && (
             <a
               href="./settings"
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

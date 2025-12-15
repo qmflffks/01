@@ -4,7 +4,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useReader } from '../contexts/ReaderContext';
 
 export function Settings() {
-  const { userNickname, setUserNickname, user } = useAdmin();
+  const { userNickname, setUserNickname, user, isAdmin } = useAdmin();
   const { blogTitle, loading: settingsLoading, updateSettings } = useSettings();
   const { fontSize, setFontSize } = useReader();
   const [newBlogTitle, setNewBlogTitle] = useState('');
@@ -27,10 +27,14 @@ export function Settings() {
     setSaving(true);
     setMessage('');
 
-    // 블로그 제목 저장
-    const blogSuccess = await updateSettings({ blogTitle: newBlogTitle });
+    let blogSuccess = true;
 
-    // 개인 닉네임 저장 (Supabase users 테이블)
+    // 블로그 제목 저장 (관리자만)
+    if (isAdmin) {
+      blogSuccess = await updateSettings({ blogTitle: newBlogTitle });
+    }
+
+    // 개인 닉네임 저장 (모든 사용자)
     await setUserNickname(nickname);
 
     if (blogSuccess) {
@@ -45,8 +49,8 @@ export function Settings() {
     setTimeout(() => setMessage(''), 3000);
   };
 
-  // blogTitle이 로드될 때까지 로딩 표시
-  if (settingsLoading || !newBlogTitle) {
+  // 로딩 표시 (관리자가 아닌 경우 blogTitle 로드 대기 불필요)
+  if (isAdmin && (settingsLoading || !newBlogTitle)) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -62,40 +66,42 @@ export function Settings() {
       <div className="max-w-2xl mx-auto px-4">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            블로그 설정
+            {isAdmin ? '블로그 설정' : '내 설정'}
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            블로그 제목과 내 닉네임을 설정할 수 있습니다.
+            {isAdmin ? '블로그 제목과 내 닉네임을 설정할 수 있습니다.' : '닉네임과 리더 모드 설정을 변경할 수 있습니다.'}
           </p>
         </div>
 
-        {/* 블로그 제목 (전역 설정) */}
-        <div className="card space-y-6 mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              블로그 전역 설정
-            </h2>
-            <label
-              htmlFor="blogTitle"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              블로그 제목
-            </label>
-            <input
-              type="text"
-              id="blogTitle"
-              value={newBlogTitle}
-              onChange={(e) => setNewBlogTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                focus:ring-2 focus:ring-primary-500 focus:border-transparent
-                bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-              placeholder="예: 파이의 웹툰 리뷰"
-            />
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              블로그 헤더와 푸터에 표시됩니다.
-            </p>
+        {/* 블로그 제목 (관리자 전용) */}
+        {isAdmin && (
+          <div className="card space-y-6 mb-6">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                블로그 전역 설정 (관리자 전용)
+              </h2>
+              <label
+                htmlFor="blogTitle"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                블로그 제목
+              </label>
+              <input
+                type="text"
+                id="blogTitle"
+                value={newBlogTitle}
+                onChange={(e) => setNewBlogTitle(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
+                  focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                  bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="예: 파이의 웹툰 리뷰"
+              />
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                블로그 헤더와 푸터에 표시됩니다.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 내 닉네임 (개인 설정) */}
         <div className="card space-y-6 mb-6">
