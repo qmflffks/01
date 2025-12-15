@@ -22,6 +22,14 @@ export function ReaderProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
+    const root = window.document.documentElement;
+
+    if (readerMode) {
+      root.classList.add('reader-mode');
+    } else {
+      root.classList.remove('reader-mode');
+    }
+
     localStorage.setItem('readerMode', String(readerMode));
   }, [readerMode]);
 
