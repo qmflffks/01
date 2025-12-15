@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAdmin } from '../contexts/AdminContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useReader } from '../contexts/ReaderContext';
 
 export function Settings() {
   const { userNickname, setUserNickname, user } = useAdmin();
   const { blogTitle, loading: settingsLoading, updateSettings } = useSettings();
+  const { fontSize, setFontSize } = useReader();
   const [newBlogTitle, setNewBlogTitle] = useState('');
   const [nickname, setNickname] = useState('');
   const [saving, setSaving] = useState(false);
@@ -125,6 +127,46 @@ export function Settings() {
                 현재 로그인: {user.email}
               </p>
             )}
+          </div>
+        </div>
+
+        {/* Reader Mode 설정 */}
+        <div className="card space-y-6 mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              리더 모드 설정
+            </h2>
+            <label
+              htmlFor="fontSize"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              글씨 크기: {fontSize}px
+            </label>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-gray-500">8px</span>
+              <input
+                type="range"
+                id="fontSize"
+                min="8"
+                max="20"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700
+                  [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                  [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary-500
+                  [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full
+                  [&::-moz-range-thumb]:bg-primary-500 [&::-moz-range-thumb]:border-0"
+              />
+              <span className="text-xs text-gray-500">20px</span>
+            </div>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              리더 모드에서 표시되는 글씨 크기를 조정합니다. (헤더에서 책 아이콘으로 리더 모드 전환)
+            </p>
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg" style={{ fontSize: `${fontSize}px` }}>
+              <p className="text-gray-700 dark:text-gray-300">
+                미리보기: 이 텍스트는 현재 설정된 글씨 크기로 표시됩니다.
+              </p>
+            </div>
           </div>
         </div>
 
